@@ -29,7 +29,7 @@ export function TermsOfServiceDialog() {
 
                     <h3 className="text-lg font-semibold text-foreground">1. Uso do Sistema</h3>
                     <p>
-                        O Seara Finance é uma ferramenta de gestão financeira destinada exclusivamente ao uso interno da Escola de Líderes. O acesso é restrito a pessoal autorizado.
+                        O Seara Finance é uma ferramenta de gestão financeira destinada exclusivamente ao uso interno. O acesso é restrito a pessoal autorizado.
                     </p>
 
                     <h3 className="text-lg font-semibold text-foreground">2. Responsabilidades do Usuário</h3>
@@ -78,18 +78,18 @@ export function PrivacyPolicyDialog() {
                     </p>
 
                     <h3 className="text-lg font-semibold text-foreground">2. Uso das Informações</h3>
-                    <p>
-                        As informações coletadas são usadas exclusivamente para:
+                    <div className="space-y-4 text-sm text-foreground/80">
+                        As as informações coletadas são usadas exclusivamente para:
                         <ul className="list-disc pl-5 mt-2 space-y-1">
                             <li>Fornecer acesso autenticado ao sistema;</li>
                             <li>Gerar relatórios financeiros e gerenciais;</li>
                             <li>Manter a segurança e integridade da plataforma.</li>
                         </ul>
-                    </p>
+                    </div>
 
                     <h3 className="text-lg font-semibold text-foreground">3. Compartilhamento de Dados</h3>
                     <p>
-                        Não compartilhamos suas informações pessoais com terceiros, exceto quando exigido por lei ou autoridade competente. Dados financeiros agregados podem ser utilizados pela administração da Escola de Líderes para tomada de decisões.
+                        Não compartilhamos suas informações pessoais com terceiros, exceto quando exigido por lei ou autoridade competente. Dados financeiros agregados podem ser utilizados pela administração para tomada de decisões.
                     </p>
 
                     <h3 className="text-lg font-semibold text-foreground">4. Segurança</h3>

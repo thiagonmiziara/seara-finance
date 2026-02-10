@@ -41,7 +41,9 @@ export function AddTransactionModal({ onAddTransaction, className }: AddTransact
             type: 'expense',
             amount: 0,
             description: '',
-            category: ''
+            category: '',
+            date: new Date().toISOString().split('T')[0],
+            status: 'pago'
         }
     })
 
@@ -127,6 +129,45 @@ export function AddTransactionModal({ onAddTransaction, className }: AddTransact
                                     )}
                                 />
                                 {errors.type && <span className="text-red-500 text-xs">{errors.type.message}</span>}
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="status" className="text-right">
+                                Status
+                            </Label>
+                            <div className="col-span-3">
+                                <Controller
+                                    name="status"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecione o status" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="pago">Pago</SelectItem>
+                                                <SelectItem value="a_pagar">A Pagar</SelectItem>
+                                                <SelectItem value="recebido">Recebido</SelectItem>
+                                                <SelectItem value="a_receber">A Receber</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                />
+                                {errors.status && <span className="text-red-500 text-xs">{errors.status.message}</span>}
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="date" className="text-right">
+                                Data
+                            </Label>
+                            <div className="col-span-3">
+                                <Input
+                                    id="date"
+                                    type="date"
+                                    className="col-span-3"
+                                    {...register("date")}
+                                />
+                                {errors.date && <span className="text-red-500 text-xs">{errors.date.message}</span>}
                             </div>
                         </div>
                     </div>

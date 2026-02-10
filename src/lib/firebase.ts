@@ -3,13 +3,13 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCwkhCJv8II2F6GYOHjWGXezuPym3pcf8Y",
-    authDomain: "seara-finance.firebaseapp.com",
-    projectId: "seara-finance",
-    storageBucket: "seara-finance.firebasestorage.app",
-    messagingSenderId: "210838502127",
-    appId: "1:210838502127:web:f57042ca6ff5b97d3b791a",
-    measurementId: "G-Y7BTVD6VE9"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase

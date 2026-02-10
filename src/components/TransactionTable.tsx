@@ -15,6 +15,7 @@ import { ArrowUpDown, Trash } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { formatDate } from "@/utils/date"
 import {
     Table,
     TableBody,
@@ -24,8 +25,6 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Transaction } from "@/types"
-import { format, parseISO } from "date-fns"
-import { ptBR } from "date-fns/locale"
 
 interface TransactionTableProps {
     data: Transaction[]
@@ -89,10 +88,37 @@ export function TransactionTable({ data, onDelete }: TransactionTableProps) {
             ),
         },
         {
-            accessorKey: "date",
-            header: "Data",
+            id: "situation",
+            header: "Situação",
+            cell: ({ row }) => {
+                const status = row.original.status
+                const date = row.original.date
+                const formattedDate = formatDate(date)
+
+                const statusConfig: Record<string, { label: string, color: string }> = {
+                    pago: { label: "Pago", color: "text-primary" },
+                    a_pagar: { label: "A Pagar", color: "text-destructive font-bold" },
+                    recebido: { label: "Recebido", color: "text-primary" },
+                    a_receber: { label: "A Receber", color: "text-orange-500 font-medium" },
+                };
+
+                const { label, color } = statusConfig[status as keyof typeof statusConfig] || { label: status, color: "" };
+
+                return (
+                    <div className="flex flex-col">
+                        <span className={color}>
+                            {label}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{formattedDate}</span>
+                    </div>
+                )
+            },
+        },
+        {
+            accessorKey: "createdAt",
+            header: "Data do Cadastro",
             cell: ({ row }) => (
-                <div className="capitalize">{format(parseISO(row.getValue("date")), "dd/MM/yyyy", { locale: ptBR })}</div>
+                <div className="capitalize">{formatDate(row.getValue("createdAt"))}</div>
             ),
         },
         {
@@ -124,7 +150,7 @@ export function TransactionTable({ data, onDelete }: TransactionTableProps) {
         onRowSelectionChange: setRowSelection,
         initialState: {
             pagination: {
-                pageSize: 20,
+                pageSize: 10,
             },
         },
         state: {

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Transaction, TransactionFormValues } from "../types";
 import {
     collection,
@@ -12,8 +12,15 @@ import {
 import { db } from "@/lib/firebase";
 import { useAuth } from "./useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-export function useFinance() {
+export interface DateRange {
+    from: Date;
+    to: Date;
+}
+
+export function useFinance(filter?: DateRange) {
     const { user } = useAuth();
     const queryClient = useQueryClient();
     const queryKey = ["transactions", user?.id];
@@ -63,7 +70,11 @@ export function useFinance() {
 
             // Optimistically update the cache
             queryClient.setQueryData(queryKey, (old: Transaction[] = []) => [
-                { ...newT, id: "temp-id", date: new Date().toISOString() } as Transaction,
+                {
+                    ...newT,
+                    id: "temp-id",
+                    createdAt: new Date().toISOString()
+                } as Transaction,
                 ...old,
             ]);
 
@@ -106,7 +117,18 @@ export function useFinance() {
         },
     });
 
-    const summary = transactions.reduce(
+    const filteredTransactions = useMemo(() => {
+        if (!filter) return transactions;
+        return transactions.filter(t => {
+            const txDate = parseISO(t.date);
+            return isWithinInterval(txDate, {
+                start: startOfDay(filter.from),
+                end: endOfDay(filter.to)
+            });
+        });
+    }, [transactions, filter]);
+
+    const summary = filteredTransactions.reduce(
         (acc, t) => {
             if (t.type === "income") {
                 acc.income += t.amount;
@@ -121,31 +143,34 @@ export function useFinance() {
     );
 
     const exportToCSV = () => {
-        const headers = ["ID", "Descrição", "Valor", "Categoria", "Tipo", "Data"];
+        const headers = ["Descrição", "Valor", "Categoria", "Tipo", "Status", "Data", "Data do Cadastro"];
         const rows = transactions.map((t) => [
-            t.id,
             t.description,
             t.amount.toFixed(2),
             t.category,
-            t.type,
-            new Date(t.date).toLocaleDateString("pt-BR"),
+            t.type === 'income' ? 'Entrada' : 'Saída',
+            t.status === 'pago' ? 'Pago' :
+                t.status === 'a_pagar' ? 'A Pagar' :
+                    t.status === 'recebido' ? 'Recebido' : 'A Receber',
+            format(parseISO(t.date), "dd/MM/yyyy", { locale: ptBR }),
+            format(parseISO(t.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR }),
         ]);
 
-        const csvContent =
-            "data:text/csv;charset=utf-8," +
-            [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+        const csvContent = [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+        const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
 
-        const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
+        link.setAttribute("href", url);
         link.setAttribute("download", "transacoes_seara_finance.csv");
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
 
     return {
-        transactions,
+        transactions: filteredTransactions,
         addTransaction: addMutation.mutate,
         removeTransaction: deleteMutation.mutate,
         exportToCSV,

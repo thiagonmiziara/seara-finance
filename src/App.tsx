@@ -33,7 +33,7 @@ function App() {
                 </div>
 
                 {/* Left Column - Hero/Marketing */}
-                <div className="flex-1 flex flex-col justify-start pt-20 lg:pt-16 lg:justify-start p-8 lg:p-16 text-white relative z-10">
+                <div className="flex-1 flex flex-col justify-start pt-20 lg:pt-0 lg:justify-center p-8 lg:p-16 text-white relative z-10">
 
                     <div className="relative z-10 max-w-xl text-center lg:text-left animate-in fade-in slide-in-from-bottom-8 duration-1000">
                         <div className="mb-8 flex items-center justify-center lg:justify-start gap-3">
@@ -48,7 +48,7 @@ function App() {
                         </h2>
 
                         <p className="text-lg text-zinc-400 mb-10 leading-relaxed max-w-lg mx-auto lg:mx-0">
-                            O Seara Finance ajuda você a organizar seus gastos e planejar o futuro da sua escola de líderes com eficiência e clareza.
+                            O Seara Finance ajuda você a organizar seus gastos e planejar o seu futuro financeiro com eficiência e clareza.
                         </p>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-zinc-300 max-w-md mx-auto lg:mx-0">
@@ -94,16 +94,7 @@ function App() {
                                     Continuar com Google
                                 </Button>
 
-                                <div className="relative my-2">
-                                    <div className="absolute inset-0 flex items-center">
-                                        <span className="w-full border-t border-zinc-200 dark:border-zinc-800" />
-                                    </div>
-                                    <div className="relative flex justify-center text-xs uppercase tracking-wider">
-                                        <span className="bg-background px-3 text-muted-foreground font-medium">
-                                            Escola de Líderes 2026
-                                        </span>
-                                    </div>
-                                </div>
+
 
                                 <div className="text-center text-xs text-muted-foreground/80 mt-2 leading-5">
                                     Ao continuar, você concorda com nossos <br className="hidden sm:inline" />

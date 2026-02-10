@@ -6,7 +6,7 @@ export const transactionSchema = z.object({
     amount: z.number().min(0.01, "Valor deve ser maior que zero"),
     category: z.string().min(1, "Categoria é obrigatória"),
     type: z.enum(["income", "expense"]),
-    status: z.enum(["pago", "a_receber"]),
+    status: z.enum(["pago", "a_pagar", "recebido", "a_receber"]),
     date: z.string(), // Transaction date (ISO string)
     createdAt: z.string(), // Registration date (ISO string)
 });

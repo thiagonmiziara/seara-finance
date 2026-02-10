@@ -1,3 +1,5 @@
+import { useState, useMemo } from "react";
+import { startOfMonth, endOfMonth, subMonths, format, startOfDay, endOfDay } from "date-fns";
 import { AddTransactionModal } from "@/components/AddTransactionModal";
 import { SummaryCards } from "@/components/SummaryCards";
 import { TransactionChart } from "@/components/TransactionChart";
@@ -6,10 +8,39 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useFinance } from "@/hooks/useFinance";
 import { Download, LogOut } from "lucide-react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 export default function Dashboard() {
     const { user, logout } = useAuth();
-    const { transactions, addTransaction, removeTransaction, summary, exportToCSV } = useFinance();
+    const [period, setPeriod] = useState<"current" | "previous" | "custom">("current");
+    const [customRange, setCustomRange] = useState({
+        from: format(startOfMonth(new Date()), "yyyy-MM-dd"),
+        to: format(new Date(), "yyyy-MM-dd"),
+    });
+
+    const dateRange = useMemo(() => {
+        const now = new Date();
+        if (period === "current") {
+            return { from: startOfMonth(now), to: endOfDay(now) };
+        }
+        if (period === "previous") {
+            const prev = subMonths(now, 1);
+            return { from: startOfMonth(prev), to: endOfMonth(prev) };
+        }
+        return {
+            from: startOfDay(new Date(customRange.from + "T00:00:00")),
+            to: endOfDay(new Date(customRange.to + "T23:59:59"))
+        };
+    }, [period, customRange]);
+
+    const { transactions, addTransaction, removeTransaction, summary, exportToCSV } = useFinance(dateRange);
 
     return (
         <div className="flex min-h-screen flex-col bg-background">
@@ -33,12 +64,51 @@ export default function Dashboard() {
                 </div>
             </header>
             <main className="container mx-auto flex-1 space-y-8 p-4 py-8 md:p-8">
-                <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
-                    <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-                    <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-x-2 sm:space-y-0">
+                <div className="flex flex-col space-y-6 md:flex-row md:items-end md:justify-between md:space-y-0 bg-card p-4 rounded-xl border border-border/50 shadow-sm">
+                    <div className="flex flex-col space-y-4 md:flex-row md:items-center md:space-x-4 md:space-y-0 w-full lg:w-auto">
+                        <div className="space-y-1.5 flex-1 min-w-[200px]">
+                            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Período</label>
+                            <Select value={period} onValueChange={(v: any) => setPeriod(v)}>
+                                <SelectTrigger className="w-full bg-background/50 border-border/50 focus:ring-primary/20">
+                                    <SelectValue placeholder="Selecione o período" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="current">Mês Atual</SelectItem>
+                                    <SelectItem value="previous">Mês Anterior</SelectItem>
+                                    <SelectItem value="custom">Personalizado</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {period === "custom" && (
+                            <div className="flex items-center space-x-2 animate-in fade-in slide-in-from-left-4 duration-300">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1 text-center block">Início</label>
+                                    <Input
+                                        type="date"
+                                        value={customRange.from}
+                                        onChange={(e) => setCustomRange(prev => ({ ...prev, from: e.target.value }))}
+                                        className="bg-background/50 border-border/50 focus:ring-primary/20"
+                                    />
+                                </div>
+                                <div className="pt-6 text-muted-foreground">até</div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1 text-center block">Fim</label>
+                                    <Input
+                                        type="date"
+                                        value={customRange.to}
+                                        onChange={(e) => setCustomRange(prev => ({ ...prev, to: e.target.value }))}
+                                        className="bg-background/50 border-border/50 focus:ring-primary/20"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-x-2 sm:space-y-0 mt-4 md:mt-0">
                         <Button
                             variant="outline"
-                            className="w-full sm:w-auto hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-50 border-zinc-200 dark:border-zinc-800 transition-colors"
+                            className="w-full sm:w-auto hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-50 border-border/50 transition-colors bg-background/50"
                             onClick={exportToCSV}
                         >
                             <Download className="mr-2 h-4 w-4" />
@@ -46,6 +116,13 @@ export default function Dashboard() {
                         </Button>
                         <AddTransactionModal onAddTransaction={addTransaction} className="w-full sm:w-auto" />
                     </div>
+                </div>
+
+                <div className="flex flex-col space-y-2">
+                    <h2 className="text-3xl font-bold tracking-tight">Resumo Financeiro</h2>
+                    <p className="text-muted-foreground">
+                        Visualização completa do seu fluxo no período selecionado.
+                    </p>
                 </div>
 
                 <SummaryCards summary={summary} />
