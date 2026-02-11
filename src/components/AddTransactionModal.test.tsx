@@ -4,12 +4,12 @@ import { AddTransactionModal } from "./AddTransactionModal";
 
 describe("AddTransactionModal", () => {
     it("renders the trigger button", () => {
-        render(<AddTransactionModal onAddTransaction={() => { }} />);
+        render(<AddTransactionModal onAddTransaction={() => Promise.resolve()} />);
         expect(screen.getByText("Nova Transação")).toBeInTheDocument();
     });
 
     it("opens the modal on click", async () => {
-        render(<AddTransactionModal onAddTransaction={() => { }} />);
+        render(<AddTransactionModal onAddTransaction={() => Promise.resolve()} />);
         fireEvent.click(screen.getByText("Nova Transação"));
 
         expect(screen.getByText("Adicionar Transação")).toBeInTheDocument();
@@ -18,7 +18,7 @@ describe("AddTransactionModal", () => {
     });
 
     it("calls onAddTransaction with form data on valid submission", async () => {
-        const onAddTransactionMock = vi.fn();
+        const onAddTransactionMock = vi.fn().mockResolvedValue({});
         render(<AddTransactionModal onAddTransaction={onAddTransactionMock} />);
 
         // Open modal
@@ -42,7 +42,7 @@ describe("AddTransactionModal", () => {
     });
 
     it("shows validation errors on empty submission", async () => {
-        render(<AddTransactionModal onAddTransaction={() => { }} />);
+        render(<AddTransactionModal onAddTransaction={() => Promise.resolve()} />);
 
         // Open modal
         fireEvent.click(screen.getByText("Nova Transação"));

@@ -7,7 +7,7 @@ import logo from "@/assets/logo.png";
 import { TermsOfServiceDialog, PrivacyPolicyDialog } from "@/components/LegalDocuments";
 
 function App() {
-    const { isAuthenticated, login } = useAuth();
+    const { isAuthenticated, login, isLoggingIn } = useAuth();
 
     if (isAuthenticated) {
         return <Dashboard />;
@@ -89,9 +89,10 @@ function App() {
                                     size="lg"
                                     className="w-full relative h-12 font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all border-zinc-200 dark:border-zinc-800"
                                     onClick={login}
+                                    disabled={isLoggingIn}
                                 >
-                                    <Chrome className="mr-3 h-5 w-5" />
-                                    Continuar com Google
+                                    <Chrome className={`mr-3 h-5 w-5 ${isLoggingIn ? 'animate-spin' : ''}`} />
+                                    {isLoggingIn ? "Entrando..." : "Continuar com Google"}
                                 </Button>
 
 

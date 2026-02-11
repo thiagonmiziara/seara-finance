@@ -1,9 +1,11 @@
 import { useState, useMemo } from "react";
 import { startOfMonth, endOfMonth, subMonths, format, startOfDay, endOfDay } from "date-fns";
 import { AddTransactionModal } from "@/components/AddTransactionModal";
+import { CategoryChart } from "@/components/CategoryChart";
 import { SummaryCards } from "@/components/SummaryCards";
 import { TransactionChart } from "@/components/TransactionChart";
 import { TransactionTable } from "@/components/TransactionTable";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useFinance } from "@/hooks/useFinance";
@@ -40,7 +42,16 @@ export default function Dashboard() {
         };
     }, [period, customRange]);
 
-    const { transactions, addTransaction, removeTransaction, summary, exportToCSV } = useFinance(dateRange);
+    const {
+        transactions,
+        addTransaction,
+        removeTransaction,
+        summary,
+        exportToCSV,
+        isAdding,
+        isDeleting,
+        isInitialLoading
+    } = useFinance(dateRange);
 
     return (
         <div className="flex min-h-screen flex-col bg-background">
@@ -81,24 +92,24 @@ export default function Dashboard() {
                         </div>
 
                         {period === "custom" && (
-                            <div className="flex items-center space-x-2 animate-in fade-in slide-in-from-left-4 duration-300">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1 text-center block">Início</label>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2 animate-in fade-in slide-in-from-left-4 duration-300 w-full lg:w-auto">
+                                <div className="space-y-1.5 flex-1 sm:flex-none">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1 mb-1 block">Início</label>
                                     <Input
                                         type="date"
                                         value={customRange.from}
                                         onChange={(e) => setCustomRange(prev => ({ ...prev, from: e.target.value }))}
-                                        className="bg-background/50 border-border/50 focus:ring-primary/20"
+                                        className="bg-background/50 border-border/50 focus:ring-primary/20 h-10"
                                     />
                                 </div>
-                                <div className="pt-6 text-muted-foreground">até</div>
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1 text-center block">Fim</label>
+                                <div className="hidden sm:block pt-6 text-muted-foreground font-medium text-xs">até</div>
+                                <div className="space-y-1.5 flex-1 sm:flex-none">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1 mb-1 block">Fim</label>
                                     <Input
                                         type="date"
                                         value={customRange.to}
                                         onChange={(e) => setCustomRange(prev => ({ ...prev, to: e.target.value }))}
-                                        className="bg-background/50 border-border/50 focus:ring-primary/20"
+                                        className="bg-background/50 border-border/50 focus:ring-primary/20 h-10"
                                     />
                                 </div>
                             </div>
@@ -114,7 +125,7 @@ export default function Dashboard() {
                             <Download className="mr-2 h-4 w-4" />
                             <span className="truncate">Exportar CSV</span>
                         </Button>
-                        <AddTransactionModal onAddTransaction={addTransaction} className="w-full sm:w-auto" />
+                        <AddTransactionModal onAddTransaction={addTransaction} isAdding={isAdding} className="w-full sm:w-auto" />
                     </div>
                 </div>
 
@@ -125,31 +136,40 @@ export default function Dashboard() {
                     </p>
                 </div>
 
-                <SummaryCards summary={summary} />
+                {isInitialLoading ? (
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <Skeleton className="h-[120px]" />
+                        <Skeleton className="h-[120px]" />
+                        <Skeleton className="h-[120px]" />
+                    </div>
+                ) : (
+                    <SummaryCards summary={summary} />
+                )}
 
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-                    <TransactionChart transactions={transactions} />
-                    <div className="col-span-4 lg:col-span-3">
-                        {/* Placeholder for another chart or recent activity if needed. 
-                 For now, the chart takes 4 cols and maybe we can make it full width or add something else.
-                 The layout requested had: Cards, Chart, Table.
-                 Let's make the chart full width on mobile, and part of grid on desktop.
-                 Actually, the prompt said "Gráfico de barras ... para mostrar o fluxo mensal".
-                 Let's make the chart 4 columns and maybe put something else next to it or just make it occupy a good chunk.
-                 Wait, the design usually has the chart prominent.
-             */}
-                    </div>
-                </div>
-                {/* Adjusted grid above: The chart is set to col-span-4. If we want it full width we can change it. 
-            Let's make it full width for better visibility as there is no specific "recent transactions" widget mentioned aside from the table.
-        */}
-                <div className="grid gap-4 md:grid-cols-1">
-                    <TransactionChart transactions={transactions} />
+                    {isInitialLoading ? (
+                        <>
+                            <Skeleton className="col-span-4 h-[350px]" />
+                            <Skeleton className="col-span-3 h-[350px]" />
+                        </>
+                    ) : (
+                        <>
+                            <TransactionChart transactions={transactions} />
+                            <CategoryChart transactions={transactions} />
+                        </>
+                    )}
                 </div>
 
                 <div className="space-y-4">
                     <h3 className="text-xl font-semibold tracking-tight">Transações</h3>
-                    <TransactionTable data={transactions} onDelete={removeTransaction} />
+                    {isInitialLoading ? (
+                        <div className="space-y-2">
+                            <Skeleton className="h-[50px] w-full" />
+                            <Skeleton className="h-[200px] w-full" />
+                        </div>
+                    ) : (
+                        <TransactionTable data={transactions} onDelete={removeTransaction} isDeleting={isDeleting} />
+                    )}
                 </div>
             </main>
         </div>

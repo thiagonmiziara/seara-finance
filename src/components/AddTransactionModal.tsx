@@ -23,11 +23,12 @@ import { useState } from "react"
 import { useForm, Controller } from "react-hook-form"
 
 interface AddTransactionModalProps {
-    onAddTransaction: (data: TransactionFormValues) => void
+    onAddTransaction: (data: TransactionFormValues) => Promise<any>
+    isAdding?: boolean
     className?: string
 }
 
-export function AddTransactionModal({ onAddTransaction, className }: AddTransactionModalProps) {
+export function AddTransactionModal({ onAddTransaction, isAdding, className }: AddTransactionModalProps) {
     const [open, setOpen] = useState(false)
     const {
         register,
@@ -47,10 +48,14 @@ export function AddTransactionModal({ onAddTransaction, className }: AddTransact
         }
     })
 
-    const onSubmit = (data: TransactionFormValues) => {
-        onAddTransaction(data)
-        setOpen(false)
-        reset()
+    const onSubmit = async (data: TransactionFormValues) => {
+        try {
+            await onAddTransaction(data)
+            setOpen(false)
+            reset()
+        } catch (error) {
+            console.error("Failed to add transaction:", error)
+        }
     }
 
     return (
@@ -172,7 +177,9 @@ export function AddTransactionModal({ onAddTransaction, className }: AddTransact
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button type="submit">Salvar</Button>
+                        <Button type="submit" disabled={isAdding}>
+                            {isAdding ? "Salvando..." : "Salvar"}
+                        </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>

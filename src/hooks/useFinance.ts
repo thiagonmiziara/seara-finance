@@ -26,7 +26,7 @@ export function useFinance(filter?: DateRange) {
     const queryKey = ["transactions", user?.id];
 
     // Read: Fetch transactions using useQuery + onSnapshot sync
-    const { data: transactions = [] } = useQuery<Transaction[]>({
+    const { data: transactions = [], isPending } = useQuery<Transaction[]>({
         queryKey,
         queryFn: () => [], // Initial data is empty, will be populated by onSnapshot
         enabled: !!user,
@@ -171,10 +171,13 @@ export function useFinance(filter?: DateRange) {
 
     return {
         transactions: filteredTransactions,
-        addTransaction: addMutation.mutate,
-        removeTransaction: deleteMutation.mutate,
+        addTransaction: addMutation.mutateAsync,
+        removeTransaction: deleteMutation.mutateAsync,
         exportToCSV,
         summary,
-        isLoading: addMutation.isPending || deleteMutation.isPending,
+        isAdding: addMutation.isPending,
+        isDeleting: deleteMutation.isPending,
+        isInitialLoading: isPending && user !== null,
+        isLoading: isPending || addMutation.isPending || deleteMutation.isPending,
     };
 }

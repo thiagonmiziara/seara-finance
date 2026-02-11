@@ -20,6 +20,7 @@ interface AuthContextType {
     logout: () => Promise<void>;
     isAuthenticated: boolean;
     loading: boolean;
+    isLoggingIn: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,6 +28,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
 
     useEffect(() => {
         console.log("Iniciando listener onAuthStateChanged...");
@@ -43,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUser(null);
             }
             setLoading(false);
+            setIsLoggingIn(false);
         });
 
         return () => unsubscribe();
@@ -50,10 +53,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const login = async () => {
         try {
+            setIsLoggingIn(true);
             console.log("Iniciando signInWithPopup...");
             const result = await signInWithPopup(auth, googleProvider);
             console.log("Resultado do signInWithPopup:", result.user.email);
         } catch (error: any) {
+            setIsLoggingIn(false);
             console.error("Erro completo do Firebase:", error);
             alert(`ERRO DE CONFIGURAÇÃO:\n${error.code}\n\n1. Verifique se clicou em SALVAR no Firebase.\n2. Tente abrir em uma janela ANÔNIMA.\n3. Domínio localhost deve estar autorizado.`);
         }
@@ -68,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, loading }}>
+        <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, loading, isLoggingIn }}>
             {!loading && children}
         </AuthContext.Provider>
     );
