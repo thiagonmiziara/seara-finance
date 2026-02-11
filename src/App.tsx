@@ -3,7 +3,7 @@ import Dashboard from "@/components/Dashboard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Chrome, CheckCircle2 } from "lucide-react";
-import logo from "@/assets/logo.png";
+import logo from "/logo.png";
 import { TermsOfServiceDialog, PrivacyPolicyDialog } from "@/components/LegalDocuments";
 
 function App() {
@@ -19,7 +19,7 @@ function App() {
             <div className="absolute inset-0 flex">
                 <div className="w-full lg:w-1/2 bg-zinc-900 relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/20 to-green-600/20" />
-                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay" />
+                    <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay" />
                 </div>
                 <div className="hidden lg:block lg:w-1/2 bg-background" />
             </div>
@@ -29,7 +29,7 @@ function App() {
 
                 {/* Watermark Logo - Top Center */}
                 <div className="absolute -top-24 lg:-top-12 left-1/2 transform -translate-x-1/2 w-full max-w-4xl h-96 flex items-start justify-center pointer-events-none opacity-[0.05] lg:opacity-[0.15] z-0 px-4">
-                    <img src={logo} alt="" className="h-full w-auto object-contain grayscale brightness-100 lg:brightness-200" />
+                    <img src={logo} alt="" className="h-full w-auto object-contain grayscale brightness-100 lg:brightness-200" fetchPriority="high" loading="eager" />
                 </div>
 
                 {/* Left Column - Hero/Marketing */}
