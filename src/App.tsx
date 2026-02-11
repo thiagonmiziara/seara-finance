@@ -3,7 +3,7 @@ import Dashboard from "@/components/Dashboard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Chrome, CheckCircle2 } from "lucide-react";
-import logo from "/logo.png";
+import logo from "@/assets/logo.png";
 import { TermsOfServiceDialog, PrivacyPolicyDialog } from "@/components/LegalDocuments";
 
 function App() {
