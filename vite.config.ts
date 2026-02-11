@@ -17,7 +17,8 @@ export default defineConfig({
                 name: 'Seara Finance',
                 short_name: 'SearaFinance',
                 description: 'Gerencie suas finanças de forma simples e eficiente.',
-                theme_color: '#000000',
+                theme_color: '#1A1A1A',
+                background_color: '#1A1A1A',
                 icons: [
                     {
                         src: 'pwa-192x192.png',
