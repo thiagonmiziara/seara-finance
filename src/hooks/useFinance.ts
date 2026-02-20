@@ -160,46 +160,31 @@ export function useFinance(filter?: DateRange) {
     if (!filter) return transactions;
 
     return transactions.filter((t) => {
+      const isPendingStatus =
+        t.status === 'a_pagar' || t.status === 'a_receber';
+
       let txDate: Date | null = null;
       try {
-        txDate = t.date ? parseTransactionDate(t.date) : null;
+        if (isPendingStatus) {
+          txDate = t.createdAt ? parseTransactionDate(t.createdAt) : null;
+        } else {
+          txDate = t.date ? parseTransactionDate(t.date) : null;
+        }
       } catch (e) {
         txDate = null;
       }
+      if (!txDate) return false;
 
-      return txDate
-        ? isWithinInterval(txDate, {
-            start: startOfDay(filter.from),
-            end: endOfDay(filter.to),
-          })
-        : false;
+      return isWithinInterval(txDate, {
+        start: startOfDay(filter.from),
+        end: endOfDay(filter.to),
+      });
     });
   }, [transactions, filter]);
 
   const tableTransactions = useMemo(() => {
-    if (!filter) return transactions;
-
-    return transactions.filter((t) => {
-      const isPendingStatus =
-        t.status === 'a_pagar' || t.status === 'a_receber';
-
-      if (isPendingStatus) return true;
-
-      let txDate: Date | null = null;
-      try {
-        txDate = t.date ? parseTransactionDate(t.date) : null;
-      } catch (e) {
-        txDate = null;
-      }
-
-      return txDate
-        ? isWithinInterval(txDate, {
-            start: startOfDay(filter.from),
-            end: endOfDay(filter.to),
-          })
-        : false;
-    });
-  }, [transactions, filter]);
+    return dateFilteredTransactions;
+  }, [dateFilteredTransactions]);
 
   const summary = dateFilteredTransactions.reduce(
     (acc, t) => {
