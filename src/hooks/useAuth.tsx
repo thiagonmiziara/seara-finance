@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async () => {
     try {
       setIsLoggingIn(true);
-      const result = await signInWithPopup(auth, googleProvider);
+      await signInWithPopup(auth, googleProvider);
     } catch (error: any) {
       setIsLoggingIn(false);
       alert(
