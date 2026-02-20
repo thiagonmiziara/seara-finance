@@ -148,35 +148,60 @@ export function useFinance(filter?: DateRange) {
     },
   });
 
-  const filteredTransactions = useMemo(() => {
+  const parseTransactionDate = (value: string) => {
+    if (!value) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return new Date(`${value}T00:00:00`);
+    }
+    return parseISO(value);
+  };
+
+  const dateFilteredTransactions = useMemo(() => {
     if (!filter) return transactions;
 
-    // include transactions that are within the selected date range
-    // OR have pending statuses (a_pagar, a_receber) so they stay visible
     return transactions.filter((t) => {
-      // if date is missing or malformed, keep the item
       let txDate: Date | null = null;
       try {
-        txDate = t.date ? parseISO(t.date) : null;
+        txDate = t.date ? parseTransactionDate(t.date) : null;
       } catch (e) {
         txDate = null;
       }
 
-      const inRange = txDate
+      return txDate
         ? isWithinInterval(txDate, {
             start: startOfDay(filter.from),
             end: endOfDay(filter.to),
           })
         : false;
-
-      const isPendingStatus =
-        t.status === 'a_pagar' || t.status === 'a_receber';
-
-      return inRange || isPendingStatus;
     });
   }, [transactions, filter]);
 
-  const summary = filteredTransactions.reduce(
+  const tableTransactions = useMemo(() => {
+    if (!filter) return transactions;
+
+    return transactions.filter((t) => {
+      const isPendingStatus =
+        t.status === 'a_pagar' || t.status === 'a_receber';
+
+      if (isPendingStatus) return true;
+
+      let txDate: Date | null = null;
+      try {
+        txDate = t.date ? parseTransactionDate(t.date) : null;
+      } catch (e) {
+        txDate = null;
+      }
+
+      return txDate
+        ? isWithinInterval(txDate, {
+            start: startOfDay(filter.from),
+            end: endOfDay(filter.to),
+          })
+        : false;
+    });
+  }, [transactions, filter]);
+
+  const summary = dateFilteredTransactions.reduce(
     (acc, t) => {
       if (t.type === 'income') {
         acc.income += t.amount;
@@ -200,21 +225,28 @@ export function useFinance(filter?: DateRange) {
       'Data',
       'Data do Cadastro',
     ];
-    const rows = transactions.map((t) => [
-      t.description,
-      t.amount.toFixed(2),
-      t.category,
-      t.type === 'income' ? 'Entrada' : 'Saída',
-      t.status === 'pago'
-        ? 'Pago'
-        : t.status === 'a_pagar'
-          ? 'A Pagar'
-          : t.status === 'recebido'
-            ? 'Recebido'
-            : 'A Receber',
-      format(parseISO(t.date), 'dd/MM/yyyy', { locale: ptBR }),
-      format(parseISO(t.createdAt), 'dd/MM/yyyy HH:mm', { locale: ptBR }),
-    ]);
+    const rows = dateFilteredTransactions.map((t) => {
+      const txDate = parseTransactionDate(t.date);
+      const createdAt = parseTransactionDate(t.createdAt);
+
+      return [
+        t.description,
+        t.amount.toFixed(2),
+        t.category,
+        t.type === 'income' ? 'Entrada' : 'Saída',
+        t.status === 'pago'
+          ? 'Pago'
+          : t.status === 'a_pagar'
+            ? 'A Pagar'
+            : t.status === 'recebido'
+              ? 'Recebido'
+              : 'A Receber',
+        txDate ? format(txDate, 'dd/MM/yyyy', { locale: ptBR }) : '',
+        createdAt
+          ? format(createdAt, 'dd/MM/yyyy HH:mm', { locale: ptBR })
+          : '',
+      ];
+    });
 
     const csvContent = [
       headers.join(','),
@@ -235,7 +267,8 @@ export function useFinance(filter?: DateRange) {
   };
 
   return {
-    transactions: filteredTransactions,
+    transactions: tableTransactions,
+    dashboardTransactions: dateFilteredTransactions,
     addTransaction: addMutation.mutateAsync,
     removeTransaction: deleteMutation.mutateAsync,
     exportToCSV,

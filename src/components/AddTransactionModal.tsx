@@ -149,7 +149,15 @@ export function AddTransactionModal({
                   step='0.01'
                   className='col-span-3'
                   placeholder='0,00'
-                  {...register('amount', { valueAsNumber: true })}
+                  {...register('amount', {
+                    setValueAs: (value) => {
+                      if (typeof value === 'string') {
+                        return Number(value.replace(',', '.'));
+                      }
+
+                      return value;
+                    },
+                  })}
                 />
                 {errors.amount && (
                   <span className='text-red-500 text-xs'>

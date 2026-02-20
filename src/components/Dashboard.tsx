@@ -7,6 +7,7 @@ import {
   startOfDay,
   endOfDay,
 } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { AddTransactionModal } from '@/components/AddTransactionModal';
 import { CategoryChart } from '@/components/CategoryChart';
 import { SummaryCards } from '@/components/SummaryCards';
@@ -16,7 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useFinance } from '@/hooks/useFinance';
-import { Download, LogOut } from 'lucide-react';
+import { Download, LogOut, RotateCcw } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -36,6 +37,24 @@ export default function Dashboard() {
     to: format(new Date(), 'yyyy-MM-dd'),
   });
 
+  const selectedMonthLabel = useMemo(() => {
+    const now = new Date();
+    const formatMonth = (date: Date) => {
+      const label = format(date, 'MMMM', { locale: ptBR });
+      return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
+    };
+
+    if (period === 'current') {
+      return formatMonth(now);
+    }
+
+    if (period === 'previous') {
+      return formatMonth(subMonths(now, 1));
+    }
+
+    return formatMonth(new Date(`${customRange.from}T00:00:00`));
+  }, [period, customRange.from]);
+
   const dateRange = useMemo(() => {
     const now = new Date();
     if (period === 'current') {
@@ -53,6 +72,7 @@ export default function Dashboard() {
 
   const {
     transactions,
+    dashboardTransactions,
     addTransaction,
     removeTransaction,
     summary,
@@ -159,6 +179,26 @@ export default function Dashboard() {
                     className='bg-background/50 border-border/50 focus:ring-primary/20 h-10'
                   />
                 </div>
+                <div className='space-y-1.5 flex-1 sm:flex-none'>
+                  <label className='text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1 mb-1 block'>
+                    &nbsp;
+                  </label>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    className='w-full sm:w-auto h-10 px-3 py-2 text-sm border-border/50 bg-background/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-50'
+                    onClick={() => {
+                      setPeriod('current');
+                      setCustomRange({
+                        from: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+                        to: format(new Date(), 'yyyy-MM-dd'),
+                      });
+                    }}
+                  >
+                    <RotateCcw className='mr-2 h-3.5 w-3.5' />
+                    Limpar datas
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -182,7 +222,7 @@ export default function Dashboard() {
 
         <div className='flex flex-col space-y-2'>
           <h2 className='text-3xl font-bold tracking-tight'>
-            Resumo Financeiro
+            Resumo Financeiro - {selectedMonthLabel}
           </h2>
           <p className='text-muted-foreground'>
             Visualização completa do seu fluxo no período selecionado.
@@ -207,8 +247,8 @@ export default function Dashboard() {
             </>
           ) : (
             <>
-              <TransactionChart transactions={transactions} />
-              <CategoryChart transactions={transactions} />
+              <TransactionChart transactions={dashboardTransactions} />
+              <CategoryChart transactions={dashboardTransactions} />
             </>
           )}
         </div>

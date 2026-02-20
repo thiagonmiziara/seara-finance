@@ -164,14 +164,14 @@ export function TransactionTable({
       ),
     },
     {
-      id: 'situation',
+      accessorKey: 'status',
       header: 'Situação',
       filterFn: (row, _id, filterValue) => {
         if (!filterValue) return true;
         return row.original.status === filterValue;
       },
       cell: ({ row }) => {
-        const status = row.original.status;
+        const status = row.getValue('status') as string;
         const date = row.original.date;
         const formattedDate = formatDate(date);
 
@@ -330,7 +330,7 @@ export function TransactionTable({
               // 'all' means no status filter
               setSelectedStatusFilter(value);
               table
-                .getColumn('situation')
+                .getColumn('status')
                 ?.setFilterValue(value === 'all' ? undefined : value);
             }}
             value={selectedStatusFilter}
