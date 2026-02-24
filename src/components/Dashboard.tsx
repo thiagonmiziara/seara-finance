@@ -13,6 +13,7 @@ import { CategoryChart } from '@/components/CategoryChart';
 import { SummaryCards } from '@/components/SummaryCards';
 import { TransactionChart } from '@/components/TransactionChart';
 import { TransactionTable } from '@/components/TransactionTable';
+import MonthComparisonChart from '@/components/MonthComparisonChart';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -81,6 +82,10 @@ export default function Dashboard() {
     isDeleting,
     isInitialLoading,
   } = useFinance(dateRange);
+
+  // month comparison selectors (any two months)
+  const [monthA, setMonthA] = useState(format(subMonths(new Date(), 1), 'yyyy-MM'));
+  const [monthB, setMonthB] = useState(format(new Date(), 'yyyy-MM'));
 
   return (
     <div className='flex min-h-screen flex-col bg-background'>
@@ -251,6 +256,37 @@ export default function Dashboard() {
               <CategoryChart transactions={dashboardTransactions} />
             </>
           )}
+        </div>
+
+        <div className='mt-4 bg-card p-4 rounded-xl border border-border/50'>
+          <div className='flex items-center gap-3 mb-4 flex-col sm:flex-row'>
+            <div className='flex items-center gap-2'>
+              <label className='text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1'>Mês A</label>
+              <Input
+                type='month'
+                value={monthA}
+                onChange={(e) => setMonthA(e.target.value)}
+                className='h-10'
+              />
+            </div>
+            <div className='flex items-center gap-2'>
+              <label className='text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1'>Mês B</label>
+              <Input
+                type='month'
+                value={monthB}
+                onChange={(e) => setMonthB(e.target.value)}
+                className='h-10'
+              />
+            </div>
+          </div>
+
+          <div>
+            <MonthComparisonChart
+              transactions={dashboardTransactions}
+              monthA={new Date(monthA + '-01T00:00:00')}
+              monthB={new Date(monthB + '-01T00:00:00')}
+            />
+          </div>
         </div>
 
         <div className='space-y-4'>

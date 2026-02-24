@@ -41,7 +41,6 @@ function App() {
             src={logo}
             alt=''
             className='h-full w-auto object-contain grayscale brightness-100 lg:brightness-200'
-            fetchPriority='high'
             loading='eager'
           />
         </div>

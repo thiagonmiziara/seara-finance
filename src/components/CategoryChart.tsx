@@ -9,13 +9,16 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Transaction } from '@/types';
 import { useMemo } from 'react';
-import { CATEGORIES } from '@/lib/categories';
+import { CATEGORIES as STATIC_CATEGORIES } from '@/lib/categories';
+import { useCategories } from '@/hooks/useCategories';
 
 interface CategoryChartProps {
   transactions: Transaction[];
 }
 
 export function CategoryChart({ transactions }: CategoryChartProps) {
+  const { categories: dynamicCategories } = useCategories();
+
   const data = useMemo(() => {
     // consider only expenses for this chart
     const categories = transactions
@@ -35,7 +38,9 @@ export function CategoryChart({ transactions }: CategoryChartProps) {
 
     return Object.entries(categories)
       .map(([name, value]) => {
-        const found = CATEGORIES.find((c) => c.value === name);
+        const found =
+          dynamicCategories.find((c) => c.value === name) ||
+          STATIC_CATEGORIES.find((c) => c.value === name);
         return {
           key: name,
           name: found ? found.label : name,

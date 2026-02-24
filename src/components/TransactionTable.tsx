@@ -32,7 +32,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Transaction } from '@/types';
-import { CATEGORIES } from '@/lib/categories';
+import { CATEGORIES as STATIC_CATEGORIES } from '@/lib/categories';
+import { useCategories } from '@/hooks/useCategories';
 
 interface TransactionTableProps {
   data: Transaction[];
@@ -45,6 +46,7 @@ export function TransactionTable({
   onDelete,
   isDeleting,
 }: TransactionTableProps) {
+  const { categories } = useCategories();
   const statusConfig: Record<
     string,
     { label: string; textClass: string; dotClass: string; itemClass: string }
@@ -136,7 +138,9 @@ export function TransactionTable({
       header: 'Categoria',
       cell: ({ row }) => {
         const value = row.getValue('category') as string;
-        const found = CATEGORIES.find((c) => c.value === value);
+        const found =
+          categories.find((c) => c.value === value) ||
+          STATIC_CATEGORIES.find((c) => c.value === value);
         return (
           <div className='capitalize inline-flex items-center gap-2'>
             {found ? (
@@ -288,20 +292,35 @@ export function TransactionTable({
                     <span
                       className='h-2 w-2 rounded-full'
                       style={{
-                        backgroundColor: CATEGORIES.find(
-                          (c) => c.value === selectedCategoryFilter,
+                        backgroundColor: (
+                          categories.find(
+                            (c) => c.value === selectedCategoryFilter,
+                          ) ||
+                          STATIC_CATEGORIES.find(
+                            (c) => c.value === selectedCategoryFilter,
+                          )
                         )?.color,
                       }}
                     />
                     <span
                       style={{
-                        color: CATEGORIES.find(
-                          (c) => c.value === selectedCategoryFilter,
+                        color: (
+                          categories.find(
+                            (c) => c.value === selectedCategoryFilter,
+                          ) ||
+                          STATIC_CATEGORIES.find(
+                            (c) => c.value === selectedCategoryFilter,
+                          )
                         )?.color,
                       }}
                     >
-                      {CATEGORIES.find(
-                        (c) => c.value === selectedCategoryFilter,
+                      {(
+                        categories.find(
+                          (c) => c.value === selectedCategoryFilter,
+                        ) ||
+                        STATIC_CATEGORIES.find(
+                          (c) => c.value === selectedCategoryFilter,
+                        )
                       )?.label ?? selectedCategoryFilter}
                     </span>
                   </span>
@@ -310,17 +329,29 @@ export function TransactionTable({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value='all'>Todas</SelectItem>
-              {CATEGORIES.map((c) => (
-                <SelectItem key={c.value} value={c.value}>
-                  <span className='inline-flex items-center gap-2'>
-                    <span
-                      className='h-2 w-2 rounded-full'
-                      style={{ backgroundColor: c.color }}
-                    />
-                    <span style={{ color: c.color }}>{c.label}</span>
-                  </span>
-                </SelectItem>
-              ))}
+              {categories.length > 0
+                ? categories.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      <span className='inline-flex items-center gap-2'>
+                        <span
+                          className='h-2 w-2 rounded-full'
+                          style={{ backgroundColor: c.color }}
+                        />
+                        <span style={{ color: c.color }}>{c.label}</span>
+                      </span>
+                    </SelectItem>
+                  ))
+                : STATIC_CATEGORIES.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      <span className='inline-flex items-center gap-2'>
+                        <span
+                          className='h-2 w-2 rounded-full'
+                          style={{ backgroundColor: c.color }}
+                        />
+                        <span style={{ color: c.color }}>{c.label}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
             </SelectContent>
           </Select>
         </div>
@@ -435,13 +466,24 @@ export function TransactionTable({
                         className='h-2 w-2 rounded-full'
                         style={{
                           backgroundColor:
-                            CATEGORIES.find(
-                              (c) => c.value === transaction.category,
+                            (
+                              categories.find(
+                                (c) => c.value === transaction.category,
+                              ) ||
+                              STATIC_CATEGORIES.find(
+                                (c) => c.value === transaction.category,
+                              )
                             )?.color ?? '#374151',
                         }}
                       />
-                      {CATEGORIES.find((c) => c.value === transaction.category)
-                        ?.label ?? transaction.category}
+                      {(
+                        categories.find(
+                          (c) => c.value === transaction.category,
+                        ) ||
+                        STATIC_CATEGORIES.find(
+                          (c) => c.value === transaction.category,
+                        )
+                      )?.label ?? transaction.category}
                     </p>
                   </div>
                   <Button

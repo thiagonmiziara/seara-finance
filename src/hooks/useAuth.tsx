@@ -89,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoggingIn,
       }}
     >
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }

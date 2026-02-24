@@ -18,10 +18,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { TransactionFormValues, transactionFormSchema } from '@/types';
-import { CATEGORIES } from '@/lib/categories';
+import { CATEGORIES as STATIC_CATEGORIES } from '@/lib/categories';
+import { useCategories } from '@/hooks/useCategories';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
+import { Trash } from 'lucide-react';
+import { showToast } from '@/lib/toast';
 
 interface AddTransactionModalProps {
   onAddTransaction: (data: TransactionFormValues) => Promise<any>;
@@ -40,18 +43,35 @@ export function AddTransactionModal({
     handleSubmit,
     control,
     reset,
-    formState: { errors },
+    watch,
+    setValue,
+    formState: { errors, isSubmitted },
   } = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
     defaultValues: {
       type: 'expense',
       amount: 0,
       description: '',
-      category: CATEGORIES[0].value,
+      category: STATIC_CATEGORIES[0].value,
       date: new Date().toISOString().split('T')[0],
       status: 'pago',
     },
   });
+
+  const {
+    categories: dynamicCategories,
+    addCategory,
+    deleteCategory,
+  } = useCategories();
+  const [showManage, setShowManage] = useState(false);
+  const [confirmCategory, setConfirmCategory] = useState<null | {
+    value: string;
+    label: string;
+    color: string;
+  }>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   const onSubmit = async (data: TransactionFormValues) => {
     try {
@@ -98,14 +118,25 @@ export function AddTransactionModal({
                               <span
                                 className='h-2 w-2 rounded-full'
                                 style={{
-                                  backgroundColor: CATEGORIES.find(
-                                    (c) => c.value === field.value,
+                                  backgroundColor: (
+                                    dynamicCategories.find(
+                                      (c) => c.value === field.value,
+                                    ) ||
+                                    STATIC_CATEGORIES.find(
+                                      (c) => c.value === field.value,
+                                    )
                                   )?.color,
                                 }}
                               />
                               <span>
-                                {CATEGORIES.find((c) => c.value === field.value)
-                                  ?.label ?? field.value}
+                                {(
+                                  dynamicCategories.find(
+                                    (c) => c.value === field.value,
+                                  ) ||
+                                  STATIC_CATEGORIES.find(
+                                    (c) => c.value === field.value,
+                                  )
+                                )?.label ?? field.value}
                               </span>
                             </span>
                           ) : (
@@ -116,28 +147,150 @@ export function AddTransactionModal({
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        {CATEGORIES.map((c) => (
-                          <SelectItem key={c.value} value={c.value}>
-                            <span className='inline-flex items-center gap-2'>
-                              <span
-                                className='h-2 w-2 rounded-full'
-                                style={{ backgroundColor: c.color }}
-                              />
-                              <span>{c.label}</span>
-                            </span>
-                          </SelectItem>
-                        ))}
+                        {dynamicCategories.length > 0
+                          ? dynamicCategories.map((c) => (
+                              <SelectItem key={c.value} value={c.value}>
+                                <span className='inline-flex items-center gap-2'>
+                                  <span
+                                    className='h-2 w-2 rounded-full'
+                                    style={{ backgroundColor: c.color }}
+                                  />
+                                  <span>{c.label}</span>
+                                </span>
+                              </SelectItem>
+                            ))
+                          : STATIC_CATEGORIES.map((c) => (
+                              <SelectItem key={c.value} value={c.value}>
+                                <span className='inline-flex items-center gap-2'>
+                                  <span
+                                    className='h-2 w-2 rounded-full'
+                                    style={{ backgroundColor: c.color }}
+                                  />
+                                  <span>{c.label}</span>
+                                </span>
+                              </SelectItem>
+                            ))}
+
+                        <SelectItem
+                          key='criar_categoria'
+                          value='criar_categoria'
+                        >
+                          + Criar categoria
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   )}
                 />
-                {errors.category && (
+
+                <div></div>
+
+                {/* Manage custom categories (separate UI avoids select-item click interference) */}
+                {dynamicCategories.some(
+                  (c) => !STATIC_CATEGORIES.find((s) => s.value === c.value),
+                ) && (
+                  <div className='mt-2'>
+                    <button
+                      type='button'
+                      className='text-sm text-muted-foreground underline'
+                      onClick={() => setShowManage((s) => !s)}
+                    >
+                      {showManage
+                        ? 'Fechar gerenciamento'
+                        : 'Gerenciar categorias'}
+                    </button>
+
+                    {showManage && (
+                      <div className='mt-2 space-y-2'>
+                        {dynamicCategories
+                          .filter(
+                            (c) =>
+                              !STATIC_CATEGORIES.find(
+                                (s) => s.value === c.value,
+                              ),
+                          )
+                          .map((c) => (
+                            <div
+                              key={c.value}
+                              className='flex items-center gap-2 bg-card p-2 rounded-md border border-border/40'
+                            >
+                              <span
+                                className='inline-block h-3 w-3 rounded-full'
+                                style={{ backgroundColor: c.color }}
+                              />
+                              <span className='flex-1 text-sm'>{c.label}</span>
+                              <button
+                                type='button'
+                                className='p-1 rounded hover:bg-muted/20'
+                                onClick={() => {
+                                  // open confirmation modal
+                                  setConfirmCategory({
+                                    value: c.value,
+                                    label: c.label,
+                                    color: c.color,
+                                  });
+                                  setConfirmOpen(true);
+                                }}
+                                aria-label={`Remover ${c.label}`}
+                              >
+                                <Trash className='h-4 w-4 text-red-400' />
+                              </button>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {errors.category && isSubmitted && (
                   <span className='text-red-500 text-xs'>
                     {errors.category.message}
                   </span>
                 )}
               </div>
             </div>
+
+            <Controller
+              name='category'
+              control={control}
+              render={({ field }) =>
+                field.value === 'criar_categoria' ? (
+                  <div className='grid grid-cols-4 items-center gap-4'>
+                    <Label className='text-right'>Nova Categoria</Label>
+                    <div className='col-span-3 flex gap-2'>
+                      <Input
+                        placeholder='Nome da nova categoria'
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        className='flex-1'
+                      />
+                      <Button
+                        type='button'
+                        onClick={async () => {
+                          if (!newCategoryName.trim()) return;
+                          try {
+                            setCreating(true);
+                            const created = await addCategory({
+                              label: newCategoryName.trim(),
+                            });
+                            // set form category to the created value
+                            field.onChange(created.value);
+                            setNewCategoryName('');
+                          } catch (e) {
+                            // swallow - addCategory will throw if no user
+                          } finally {
+                            setCreating(false);
+                          }
+                        }}
+                      >
+                        {creating ? 'Criando...' : 'Criar'}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <></>
+                )
+              }
+            />
             <div className='grid grid-cols-4 items-center gap-4'>
               <Label htmlFor='amount' className='text-right'>
                 Valor
@@ -266,6 +419,83 @@ export function AddTransactionModal({
               </div>
             </div>
           </div>
+
+          {/* Confirmation dialog for deleting a category */}
+          <Dialog
+            open={confirmOpen}
+            onOpenChange={(v) => {
+              setConfirmOpen(v);
+              if (!v) setConfirmCategory(null);
+            }}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Remover categoria</DialogTitle>
+                <DialogDescription>
+                  Essa ação é irreversível — as transações existentes NÃO serão
+                  removidas, mas a categoria será excluída para novos usos.
+                </DialogDescription>
+              </DialogHeader>
+              <div className='py-2'>
+                <div className='text-sm'>
+                  Deseja realmente excluir a categoria{' '}
+                  <strong>{confirmCategory?.label}</strong>?
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant='ghost'
+                  onClick={() => {
+                    setConfirmOpen(false);
+                    setConfirmCategory(null);
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant='destructive'
+                  onClick={async () => {
+                    if (!confirmCategory) return;
+                    const deleted = { ...confirmCategory };
+                    try {
+                      await deleteCategory(confirmCategory.value);
+                      const selected = watch('category');
+                      if (selected === confirmCategory.value) {
+                        setValue('category', STATIC_CATEGORIES[0].value);
+                      }
+                      showToast({
+                        message: `Categoria "${deleted.label}" removida`,
+                        type: 'success',
+                        duration: 5000,
+                        actionLabel: 'Desfazer',
+                        onAction: async () => {
+                          try {
+                            const recreated = await addCategory({
+                              label: deleted.label,
+                              color: deleted.color,
+                            });
+                            const sel = watch('category');
+                            if (sel === STATIC_CATEGORIES[0].value)
+                              setValue('category', recreated.value);
+                          } catch (e) {}
+                        },
+                      });
+                    } catch (e) {
+                      showToast({
+                        message: 'Falha ao remover categoria',
+                        type: 'error',
+                      });
+                    } finally {
+                      setConfirmOpen(false);
+                      setConfirmCategory(null);
+                    }
+                  }}
+                >
+                  Excluir
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <DialogFooter>
             <Button type='submit' disabled={isAdding}>
               {isAdding ? 'Salvando...' : 'Salvar'}
