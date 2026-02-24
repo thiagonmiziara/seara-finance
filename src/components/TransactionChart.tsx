@@ -33,8 +33,7 @@ export function TransactionChart({ transactions }: TransactionChartProps) {
             return acc;
         }, {} as Record<string, { name: string; receita: number; despesa: number }>);
 
-        // Convert to array and sort (mock sorting by month name for simplicity or just use order of appearance if needed)
-        // For a real app we'd sort by date properly. Here assuming simplified view.
+        // Convert to array and sort (simplified; for a real app sort by date)
         return Object.values(grouped);
     }, [transactions]);
 

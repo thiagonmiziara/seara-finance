@@ -30,7 +30,7 @@ export function SummaryCards({ summary }: SummaryCardsProps) {
                         {formatCurrency(summary.balance)}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                        {summary.balance >= 0 ? "+R$ 0,00" : "-R$ 0,00"} do mês passado (mock)
+                        {summary.balance >= 0 ? "+R$ 0,00" : "-R$ 0,00"} do mês passado
                     </p>
                 </CardContent>
             </Card>

@@ -6,13 +6,12 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  Legend,
   CartesianGrid,
 } from 'recharts';
 import { Transaction } from '@/types';
 import { useMonthComparison } from '@/hooks/useMonthComparison';
 import { format } from 'date-fns';
-import ptBR from 'date-fns/locale/pt-BR';
+import { ptBR } from 'date-fns/locale/pt-BR';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type Props = {
@@ -32,59 +31,7 @@ export const MonthComparisonChart: React.FC<Props> = ({
   monthB,
   className,
 }) => {
-  // when there are no real transactions, use mocked data so the chart is visible
-  const effectiveTransactions: Transaction[] =
-    transactions && transactions.length > 0
-      ? transactions
-      : (() => {
-          const makeTx = (
-            id: string,
-            category: string,
-            amount: number,
-            date: Date,
-          ) => ({
-            id,
-            description: `Mock ${category}`,
-            amount,
-            category,
-            type: 'expense' as const,
-            status: 'pago' as const,
-            date: date.toISOString(),
-            createdAt: new Date().toISOString(),
-          });
-
-          // small mocked dataset for both months
-          const cats = [
-            'salario',
-            'compras',
-            'alimentacao',
-            'transporte',
-            'lazer',
-            'outros',
-          ];
-
-          const aDate = new Date(monthA.getFullYear(), monthA.getMonth(), 10);
-          const bDate = new Date(monthB.getFullYear(), monthB.getMonth(), 10);
-
-          const mocks: Transaction[] = [] as any;
-
-          // month A (example amounts)
-          mocks.push(makeTx('mock-a-1', 'compras', 120, aDate));
-          mocks.push(makeTx('mock-a-2', 'alimentacao', 100, aDate));
-          mocks.push(makeTx('mock-a-3', 'transporte', 80, aDate));
-          mocks.push(makeTx('mock-a-4', 'lazer', 50, aDate));
-          mocks.push(makeTx('mock-a-5', 'outros', 50, aDate));
-
-          // month B (example amounts summing to 556 to mirror the screenshot)
-          mocks.push(makeTx('mock-b-1', 'compras', 200, bDate));
-          mocks.push(makeTx('mock-b-2', 'alimentacao', 250, bDate));
-          mocks.push(makeTx('mock-b-3', 'transporte', 30, bDate));
-          mocks.push(makeTx('mock-b-4', 'lazer', 76, bDate));
-
-          return mocks as Transaction[];
-        })();
-
-  const { getComparison } = useMonthComparison(effectiveTransactions);
+  const { getComparison } = useMonthComparison(transactions);
 
   const totalsExpense = getComparison(
     monthA,
@@ -92,20 +39,9 @@ export const MonthComparisonChart: React.FC<Props> = ({
     'total',
     'expense',
   ) as any;
-  const categoriesExpense = getComparison(
-    monthA,
-    monthB,
-    'category',
-    'expense',
-  ) as any[];
 
   const totalsIncome = getComparison(monthA, monthB, 'total', 'income') as any;
-  const categoriesIncome = getComparison(
-    monthA,
-    monthB,
-    'category',
-    'income',
-  ) as any[];
+  
 
   // For expenses we only show a total comparison (month A vs month B)
   const chartDataExpense = [
