@@ -35,12 +35,12 @@ function App() {
 
       {/* Content Layer */}
       <div className='relative z-20 flex min-h-screen flex-col lg:flex-row'>
-        {/* Watermark Logo - Top Center */}
-        <div className='absolute -top-24 lg:-top-12 left-1/2 transform -translate-x-1/2 w-full max-w-4xl h-96 flex items-start justify-center pointer-events-none opacity-[0.05] lg:opacity-[0.15] z-0 px-4'>
+        {/* Watermark Logo - Only visible in dark mode */}
+        <div className='absolute -top-24 lg:-top-12 left-1/2 transform -translate-x-1/2 w-full max-w-4xl h-96 hidden dark:flex items-start justify-center pointer-events-none opacity-[0.05] lg:opacity-[0.15] z-0 px-4'>
           <img
             src={logo}
             alt=''
-            className='h-full w-auto object-contain grayscale brightness-100 lg:brightness-200'
+            className='h-full w-auto object-contain brightness-200'
             loading='eager'
           />
         </div>
