@@ -41,7 +41,6 @@ export const MonthComparisonChart: React.FC<Props> = ({
   ) as any;
 
   const totalsIncome = getComparison(monthA, monthB, 'total', 'income') as any;
-  
 
   // For expenses we only show a total comparison (month A vs month B)
   const chartDataExpense = [

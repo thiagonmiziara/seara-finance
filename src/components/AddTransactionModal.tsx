@@ -58,6 +58,9 @@ export function AddTransactionModal({
     },
   });
 
+  // Currency input display state (string, formatted with comma)
+  const [amountDisplay, setAmountDisplay] = useState('');
+
   const {
     categories: dynamicCategories,
     addCategory,
@@ -78,9 +81,26 @@ export function AddTransactionModal({
       await onAddTransaction(data);
       setOpen(false);
       reset();
+      setAmountDisplay('');
     } catch (error) {
       // Handle error silently, mutation error handling will manage this
     }
+  };
+
+  const handleAmountChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    onChange: (value: number) => void,
+  ) => {
+    // Allow only digits and one comma
+    const raw = e.target.value.replace(/[^0-9,]/g, '');
+    // Ensure at most one comma
+    const parts = raw.split(',');
+    const sanitized =
+      parts.length > 2 ? parts[0] + ',' + parts.slice(1).join('') : raw;
+    setAmountDisplay(sanitized);
+    // Convert to number for the form (comma → dot)
+    const numeric = parseFloat(sanitized.replace(',', '.'));
+    onChange(isNaN(numeric) ? 0 : numeric);
   };
 
   return (
@@ -149,27 +169,27 @@ export function AddTransactionModal({
                       <SelectContent>
                         {dynamicCategories.length > 0
                           ? dynamicCategories.map((c) => (
-                              <SelectItem key={c.value} value={c.value}>
-                                <span className='inline-flex items-center gap-2'>
-                                  <span
-                                    className='h-2 w-2 rounded-full'
-                                    style={{ backgroundColor: c.color }}
-                                  />
-                                  <span>{c.label}</span>
-                                </span>
-                              </SelectItem>
-                            ))
+                            <SelectItem key={c.value} value={c.value}>
+                              <span className='inline-flex items-center gap-2'>
+                                <span
+                                  className='h-2 w-2 rounded-full'
+                                  style={{ backgroundColor: c.color }}
+                                />
+                                <span>{c.label}</span>
+                              </span>
+                            </SelectItem>
+                          ))
                           : STATIC_CATEGORIES.map((c) => (
-                              <SelectItem key={c.value} value={c.value}>
-                                <span className='inline-flex items-center gap-2'>
-                                  <span
-                                    className='h-2 w-2 rounded-full'
-                                    style={{ backgroundColor: c.color }}
-                                  />
-                                  <span>{c.label}</span>
-                                </span>
-                              </SelectItem>
-                            ))}
+                            <SelectItem key={c.value} value={c.value}>
+                              <span className='inline-flex items-center gap-2'>
+                                <span
+                                  className='h-2 w-2 rounded-full'
+                                  style={{ backgroundColor: c.color }}
+                                />
+                                <span>{c.label}</span>
+                              </span>
+                            </SelectItem>
+                          ))}
 
                         <SelectItem
                           key='criar_categoria'
@@ -188,58 +208,58 @@ export function AddTransactionModal({
                 {dynamicCategories.some(
                   (c) => !STATIC_CATEGORIES.find((s) => s.value === c.value),
                 ) && (
-                  <div className='mt-2'>
-                    <button
-                      type='button'
-                      className='text-sm text-muted-foreground underline'
-                      onClick={() => setShowManage((s) => !s)}
-                    >
-                      {showManage
-                        ? 'Fechar gerenciamento'
-                        : 'Gerenciar categorias'}
-                    </button>
+                    <div className='mt-2'>
+                      <button
+                        type='button'
+                        className='text-sm text-muted-foreground underline'
+                        onClick={() => setShowManage((s) => !s)}
+                      >
+                        {showManage
+                          ? 'Fechar gerenciamento'
+                          : 'Gerenciar categorias'}
+                      </button>
 
-                    {showManage && (
-                      <div className='mt-2 space-y-2'>
-                        {dynamicCategories
-                          .filter(
-                            (c) =>
-                              !STATIC_CATEGORIES.find(
-                                (s) => s.value === c.value,
-                              ),
-                          )
-                          .map((c) => (
-                            <div
-                              key={c.value}
-                              className='flex items-center gap-2 bg-card p-2 rounded-md border border-border/40'
-                            >
-                              <span
-                                className='inline-block h-3 w-3 rounded-full'
-                                style={{ backgroundColor: c.color }}
-                              />
-                              <span className='flex-1 text-sm'>{c.label}</span>
-                              <button
-                                type='button'
-                                className='p-1 rounded hover:bg-muted/20'
-                                onClick={() => {
-                                  // open confirmation modal
-                                  setConfirmCategory({
-                                    value: c.value,
-                                    label: c.label,
-                                    color: c.color,
-                                  });
-                                  setConfirmOpen(true);
-                                }}
-                                aria-label={`Remover ${c.label}`}
+                      {showManage && (
+                        <div className='mt-2 space-y-2'>
+                          {dynamicCategories
+                            .filter(
+                              (c) =>
+                                !STATIC_CATEGORIES.find(
+                                  (s) => s.value === c.value,
+                                ),
+                            )
+                            .map((c) => (
+                              <div
+                                key={c.value}
+                                className='flex items-center gap-2 bg-card p-2 rounded-md border border-border/40'
                               >
-                                <Trash className='h-4 w-4 text-red-400' />
-                              </button>
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                                <span
+                                  className='inline-block h-3 w-3 rounded-full'
+                                  style={{ backgroundColor: c.color }}
+                                />
+                                <span className='flex-1 text-sm'>{c.label}</span>
+                                <button
+                                  type='button'
+                                  className='p-1 rounded hover:bg-muted/20'
+                                  onClick={() => {
+                                    // open confirmation modal
+                                    setConfirmCategory({
+                                      value: c.value,
+                                      label: c.label,
+                                      color: c.color,
+                                    });
+                                    setConfirmOpen(true);
+                                  }}
+                                  aria-label={`Remover ${c.label}`}
+                                >
+                                  <Trash className='h-4 w-4 text-red-400' />
+                                </button>
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                 {errors.category && isSubmitted && (
                   <span className='text-red-500 text-xs'>
@@ -296,21 +316,25 @@ export function AddTransactionModal({
                 Valor
               </Label>
               <div className='col-span-3'>
-                <Input
-                  id='amount'
-                  type='number'
-                  step='0.01'
-                  className='col-span-3'
-                  placeholder='0,00'
-                  {...register('amount', {
-                    setValueAs: (value) => {
-                      if (typeof value === 'string') {
-                        return Number(value.replace(',', '.'));
-                      }
-
-                      return value;
-                    },
-                  })}
+                <Controller
+                  name='amount'
+                  control={control}
+                  render={({ field }) => (
+                    <div className='flex items-center border border-input rounded-md focus-within:ring-2 focus-within:ring-ring bg-background overflow-hidden'>
+                      <span className='px-3 text-sm text-muted-foreground select-none border-r border-input h-full flex items-center'>
+                        R$
+                      </span>
+                      <input
+                        id='amount'
+                        type='text'
+                        inputMode='decimal'
+                        placeholder='0,00'
+                        value={amountDisplay}
+                        onChange={(e) => handleAmountChange(e, field.onChange)}
+                        className='flex-1 px-3 py-2 text-sm bg-transparent outline-none placeholder:text-muted-foreground'
+                      />
+                    </div>
+                  )}
                 />
                 {errors.amount && (
                   <span className='text-red-500 text-xs'>
@@ -477,7 +501,7 @@ export function AddTransactionModal({
                             const sel = watch('category');
                             if (sel === STATIC_CATEGORIES[0].value)
                               setValue('category', recreated.value);
-                          } catch (e) {}
+                          } catch (e) { }
                         },
                       });
                     } catch (e) {

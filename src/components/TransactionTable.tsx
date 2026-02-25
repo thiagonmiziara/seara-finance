@@ -59,10 +59,10 @@ export function TransactionTable({
     },
     a_pagar: {
       label: 'A Pagar',
-      textClass: 'text-destructive font-bold',
-      dotClass: 'bg-destructive',
+      textClass: 'text-red-400 font-bold',
+      dotClass: 'bg-red-400',
       itemClass:
-        'text-destructive font-bold data-[highlighted]:text-destructive data-[highlighted]:font-bold',
+        'text-red-400 font-bold data-[highlighted]:text-red-400 data-[highlighted]:font-bold',
     },
     recebido: {
       label: 'Recebido',
@@ -124,7 +124,7 @@ export function TransactionTable({
         return (
           <div
             className={
-              type === 'income' ? 'text-primary' : 'text-destructive font-bold'
+              type === 'income' ? 'text-primary' : 'text-red-400 font-bold'
             }
           >
             {type === 'expense' ? '-' : ''}
@@ -221,7 +221,7 @@ export function TransactionTable({
           >
             <span className='sr-only'>Delete</span>
             <Trash
-              className={`h-4 w-4 text-destructive ${isDeleting && deletingId === transaction.id ? 'animate-pulse opacity-50' : ''}`}
+              className={`h-4 w-4 text-red-500 ${isDeleting && deletingId === transaction.id ? 'animate-pulse opacity-50' : ''}`}
             />
           </Button>
         );
@@ -331,27 +331,27 @@ export function TransactionTable({
               <SelectItem value='all'>Todas</SelectItem>
               {categories.length > 0
                 ? categories.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      <span className='inline-flex items-center gap-2'>
-                        <span
-                          className='h-2 w-2 rounded-full'
-                          style={{ backgroundColor: c.color }}
-                        />
-                        <span style={{ color: c.color }}>{c.label}</span>
-                      </span>
-                    </SelectItem>
-                  ))
+                  <SelectItem key={c.value} value={c.value}>
+                    <span className='inline-flex items-center gap-2'>
+                      <span
+                        className='h-2 w-2 rounded-full'
+                        style={{ backgroundColor: c.color }}
+                      />
+                      <span style={{ color: c.color }}>{c.label}</span>
+                    </span>
+                  </SelectItem>
+                ))
                 : STATIC_CATEGORIES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      <span className='inline-flex items-center gap-2'>
-                        <span
-                          className='h-2 w-2 rounded-full'
-                          style={{ backgroundColor: c.color }}
-                        />
-                        <span style={{ color: c.color }}>{c.label}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
+                  <SelectItem key={c.value} value={c.value}>
+                    <span className='inline-flex items-center gap-2'>
+                      <span
+                        className='h-2 w-2 rounded-full'
+                        style={{ backgroundColor: c.color }}
+                      />
+                      <span style={{ color: c.color }}>{c.label}</span>
+                    </span>
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>
@@ -374,9 +374,8 @@ export function TransactionTable({
                 ) : (
                   <span className='inline-flex items-center gap-2'>
                     <span
-                      className={`h-2 w-2 rounded-full ${
-                        statusConfig[selectedStatusFilter]?.dotClass ?? ''
-                      }`}
+                      className={`h-2 w-2 rounded-full ${statusConfig[selectedStatusFilter]?.dotClass ?? ''
+                        }`}
                     />
                     <span
                       className={
@@ -432,8 +431,8 @@ export function TransactionTable({
               },
               a_pagar: {
                 label: 'A Pagar',
-                color: 'text-rose-500',
-                bg: 'bg-rose-500/10',
+                color: 'text-red-400',
+                bg: 'bg-red-500/10',
               },
               recebido: {
                 label: 'Recebido',
@@ -506,7 +505,7 @@ export function TransactionTable({
                 <div className='flex items-end justify-between pt-1'>
                   <div className='space-y-1'>
                     <div
-                      className={`text-xl font-bold tracking-tight ${transaction.type === 'income' ? 'text-primary' : 'text-rose-500'}`}
+                      className={`text-xl font-bold tracking-tight ${transaction.type === 'income' ? 'text-primary' : 'text-red-400'}`}
                     >
                       {transaction.type === 'expense' ? '-' : ''}
                       {formattedAmount}
@@ -544,9 +543,9 @@ export function TransactionTable({
                         {header.isPlaceholder
                           ? null
                           : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                       </TableHead>
                     );
                   })}

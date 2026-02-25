@@ -11,6 +11,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from './useAuth';
+import { useCategories } from './useCategories';
+import { CATEGORIES as STATIC_CATEGORIES } from '@/lib/categories';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   format,
@@ -28,6 +30,7 @@ export interface DateRange {
 
 export function useFinance(filter?: DateRange) {
   const { user } = useAuth();
+  const { categories } = useCategories();
   const queryClient = useQueryClient();
   const queryKey = ['transactions', user?.id];
 
@@ -214,10 +217,15 @@ export function useFinance(filter?: DateRange) {
       const txDate = parseTransactionDate(t.date);
       const createdAt = parseTransactionDate(t.createdAt);
 
+      const foundCategory =
+        categories.find((c) => c.value === t.category) ||
+        STATIC_CATEGORIES.find((c) => c.value === t.category);
+      const categoryLabel = foundCategory ? foundCategory.label : t.category;
+
       return [
         t.description,
-        t.amount.toFixed(2),
-        t.category,
+        t.amount.toFixed(2).replace('.', ','),
+        categoryLabel,
         t.type === 'income' ? 'Entrada' : 'Saída',
         t.status === 'pago'
           ? 'Pago'
@@ -233,9 +241,10 @@ export function useFinance(filter?: DateRange) {
       ];
     });
 
+    const escapeCsv = (str: string) => `"${String(str).replace(/"/g, '""')}"`;
     const csvContent = [
-      headers.join(','),
-      ...rows.map((e) => e.join(',')),
+      headers.map(escapeCsv).join(';'),
+      ...rows.map((e) => e.map(escapeCsv).join(';')),
     ].join('\n');
     const blob = new Blob(['\ufeff' + csvContent], {
       type: 'text/csv;charset=utf-8;',
