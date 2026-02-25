@@ -18,7 +18,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useFinance } from '@/hooks/useFinance';
-import { Download, LogOut, RotateCcw } from 'lucide-react';
+import { useTheme } from '@/hooks/useTheme';
+import { Download, LogOut, Moon, RotateCcw, Sun } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -30,6 +31,7 @@ import { Input } from '@/components/ui/input';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [period, setPeriod] = useState<'current' | 'previous' | 'custom'>(
     'current',
   );
@@ -122,6 +124,9 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+            <Button variant='ghost' size='icon' onClick={toggleTheme} title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}>
+              {theme === 'dark' ? <Sun className='h-5 w-5' /> : <Moon className='h-5 w-5' />}
+            </Button>
             <Button variant='ghost' size='icon' onClick={logout}>
               <LogOut className='h-5 w-5' />
             </Button>

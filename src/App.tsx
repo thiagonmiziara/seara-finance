@@ -26,8 +26,8 @@ function App() {
     <div className='min-h-screen w-full relative overflow-hidden bg-background text-foreground'>
       {/* Background Layers */}
       <div className='absolute inset-0 flex'>
-        <div className='w-full lg:w-1/2 bg-zinc-900 relative overflow-hidden'>
-          <div className='absolute inset-0 bg-gradient-to-br from-emerald-600/20 to-green-600/20' />
+        <div className='w-full lg:w-1/2 bg-zinc-900 dark:bg-zinc-900 relative overflow-hidden'>
+          <div className='absolute inset-0 bg-gradient-to-br from-emerald-600/30 to-green-600/20' />
           <div className="absolute inset-0 bg-[url('/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay" />
         </div>
         <div className='hidden lg:block lg:w-1/2 bg-background' />

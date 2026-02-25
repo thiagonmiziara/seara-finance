@@ -104,7 +104,7 @@ export const MonthComparisonChart: React.FC<Props> = ({
                   >
                     <CartesianGrid
                       strokeDasharray='3 3'
-                      stroke='#333'
+                      stroke='hsl(var(--chart-grid))'
                       vertical={false}
                     />
                     <XAxis
@@ -124,11 +124,12 @@ export const MonthComparisonChart: React.FC<Props> = ({
                     <Tooltip
                       cursor={{ fill: 'transparent' }}
                       contentStyle={{
-                        backgroundColor: '#1A1A1A',
-                        border: '1px solid #333',
+                        backgroundColor: 'hsl(var(--chart-tooltip-bg))',
+                        border: '1px solid hsl(var(--chart-tooltip-border))',
                         borderRadius: 8,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                       }}
-                      itemStyle={{ color: '#fff' }}
+                      itemStyle={{ color: 'hsl(var(--chart-tooltip-text))' }}
                     />
                     <Bar
                       dataKey='A'
@@ -192,7 +193,7 @@ export const MonthComparisonChart: React.FC<Props> = ({
                   >
                     <CartesianGrid
                       strokeDasharray='3 3'
-                      stroke='#333'
+                      stroke='hsl(var(--chart-grid))'
                       vertical={false}
                     />
                     <XAxis
@@ -212,11 +213,12 @@ export const MonthComparisonChart: React.FC<Props> = ({
                     <Tooltip
                       cursor={{ fill: 'transparent' }}
                       contentStyle={{
-                        backgroundColor: '#1A1A1A',
-                        border: '1px solid #333',
+                        backgroundColor: 'hsl(var(--chart-tooltip-bg))',
+                        border: '1px solid hsl(var(--chart-tooltip-border))',
                         borderRadius: 8,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                       }}
-                      itemStyle={{ color: '#fff' }}
+                      itemStyle={{ color: 'hsl(var(--chart-tooltip-text))' }}
                     />
                     <Bar
                       dataKey='A'

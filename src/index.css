@@ -24,53 +24,58 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Premium Light Theme — Emerald/Green Finance */
+    --background: 150 20% 98%;
+    --foreground: 160 30% 8%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 160 30% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 160 30% 8%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 152 60% 36%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 150 20% 95%;
+    --secondary-foreground: 160 30% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 150 15% 93%;
+    --muted-foreground: 160 10% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 150 25% 92%;
+    --accent-foreground: 152 60% 28%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 150 15% 88%;
+    --input: 150 15% 88%;
+    --ring: 152 60% 36%;
 
     --radius: 0.75rem;
+
+    /* Chart-specific colors */
+    --chart-tooltip-bg: 0 0% 100%;
+    --chart-tooltip-border: 150 15% 88%;
+    --chart-tooltip-text: 160 30% 8%;
+    --chart-grid: 150 15% 88%;
+
+    color-scheme: light;
   }
 
   .dark {
     /* Tailwind Zinc Theme with Green Primary */
     --background: 240 5.9% 10%;
-    /* zinc-950 */
     --foreground: 0 0% 98%;
-    /* zinc-50 */
 
     --card: 240 3.7% 15.9%;
-    /* zinc-900 */
     --card-foreground: 0 0% 98%;
 
     --popover: 240 3.7% 15.9%;
     --popover-foreground: 0 0% 98%;
 
     --primary: 88 80% 48%;
-    /* Stronger vibrant green */
     --primary-foreground: 240 5.9% 10%;
 
     --secondary: 240 3.7% 15.9%;
@@ -78,21 +83,24 @@ body {
 
     --muted: 240 3.7% 15.9%;
     --muted-foreground: 240 5% 64.9%;
-    /* zinc-400 */
 
     --accent: 88 80% 18%;
-    /* Dark green for hovers */
     --accent-foreground: 88 80% 85%;
-    /* Light green text on hover */
 
     --destructive: 0 72% 51%;
-    /* Brighter red for better contrast on dark */
     --destructive-foreground: 0 0% 98%;
 
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 88 80% 48%;
-    /* Match primary green */
+
+    /* Chart-specific colors */
+    --chart-tooltip-bg: 240 3.7% 10%;
+    --chart-tooltip-border: 240 3.7% 20%;
+    --chart-tooltip-text: 0 0% 100%;
+    --chart-grid: 240 3.7% 20%;
+
+    color-scheme: dark;
   }
 }
 
@@ -106,10 +114,6 @@ body {
     font-feature-settings:
       'rlig' 1,
       'calt' 1;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
-}
-
-/* Force dark mode styles by default since we are initiating with a dark theme requirement */
-:root {
-  color-scheme: dark;
 }

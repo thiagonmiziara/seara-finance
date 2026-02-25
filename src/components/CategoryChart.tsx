@@ -84,11 +84,12 @@ export function CategoryChart({ transactions }: CategoryChartProps) {
                     ];
                   }}
                   contentStyle={{
-                    backgroundColor: '#1A1A1A',
-                    border: '1px solid #333',
+                    backgroundColor: 'hsl(var(--chart-tooltip-bg))',
+                    border: '1px solid hsl(var(--chart-tooltip-border))',
                     borderRadius: '8px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                   }}
-                  itemStyle={{ color: '#fff' }}
+                  itemStyle={{ color: 'hsl(var(--chart-tooltip-text))' }}
                 />
                 <Legend />
               </PieChart>
