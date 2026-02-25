@@ -359,7 +359,6 @@ export default function Dashboard() {
                   data={transactions}
                   onDelete={removeTransaction}
                   isDeleting={isDeleting}
-                  exportToCSV={exportToCSV}
                 />
               )}
             </div>

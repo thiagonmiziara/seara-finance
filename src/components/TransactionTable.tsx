@@ -11,7 +11,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { ArrowUpDown, Download, Trash } from 'lucide-react';
+import { ArrowUpDown, Trash } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,14 +39,12 @@ interface TransactionTableProps {
   data: Transaction[];
   onDelete: (id: string) => void;
   isDeleting?: boolean;
-  exportToCSV?: (filteredTransactions: Transaction[]) => void;
 }
 
 export function TransactionTable({
   data,
   onDelete,
   isDeleting,
-  exportToCSV,
 }: TransactionTableProps) {
   const { categories } = useCategories();
   const statusConfig: Record<

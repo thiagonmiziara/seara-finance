@@ -41,7 +41,7 @@ export function AddDebtModal({
         reset,
         watch,
         setValue,
-        formState: { errors, isSubmitted },
+        formState: { errors },
     } = useForm<DebtFormValues>({
         resolver: zodResolver(debtFormSchema),
         defaultValues: {
