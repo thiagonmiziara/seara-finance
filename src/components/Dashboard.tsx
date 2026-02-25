@@ -114,10 +114,10 @@ export default function Dashboard() {
                 <div className='h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium'>
                   {user?.name
                     ? user.name
-                        .split(' ')
-                        .map((n) => n[0])
-                        .slice(0, 2)
-                        .join('')
+                      .split(' ')
+                      .map((n) => n[0])
+                      .slice(0, 2)
+                      .join('')
                     : 'U'}
                 </div>
               )}
@@ -212,7 +212,7 @@ export default function Dashboard() {
             <Button
               variant='outline'
               className='w-full sm:w-auto hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-50 border-border/50 transition-colors bg-background/50'
-              onClick={exportToCSV}
+              onClick={() => exportToCSV()}
             >
               <Download className='mr-2 h-4 w-4' />
               <span className='truncate'>Exportar CSV</span>
@@ -301,6 +301,7 @@ export default function Dashboard() {
               data={transactions}
               onDelete={removeTransaction}
               isDeleting={isDeleting}
+              exportToCSV={exportToCSV}
             />
           )}
         </div>

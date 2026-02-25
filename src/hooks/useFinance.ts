@@ -203,7 +203,8 @@ export function useFinance(filter?: DateRange) {
     { income: 0, expense: 0, balance: 0 },
   );
 
-  const exportToCSV = () => {
+  const exportToCSV = (filteredTransactions?: Transaction[]) => {
+    const dataToExport = filteredTransactions ?? dateFilteredTransactions;
     const headers = [
       'Descrição',
       'Valor',
@@ -213,7 +214,7 @@ export function useFinance(filter?: DateRange) {
       'Data',
       'Data do Cadastro',
     ];
-    const rows = dateFilteredTransactions.map((t) => {
+    const rows = dataToExport.map((t) => {
       const txDate = parseTransactionDate(t.date);
       const createdAt = parseTransactionDate(t.createdAt);
 

@@ -11,7 +11,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { ArrowUpDown, Trash } from 'lucide-react';
+import { ArrowUpDown, Download, Trash } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,12 +39,14 @@ interface TransactionTableProps {
   data: Transaction[];
   onDelete: (id: string) => void;
   isDeleting?: boolean;
+  exportToCSV?: (filteredTransactions: Transaction[]) => void;
 }
 
 export function TransactionTable({
   data,
   onDelete,
   isDeleting,
+  exportToCSV,
 }: TransactionTableProps) {
   const { categories } = useCategories();
   const statusConfig: Record<
@@ -404,6 +406,23 @@ export function TransactionTable({
           </Select>
         </div>
       </div>
+
+      {/* Export CSV Button */}
+      {exportToCSV && (
+        <div className='flex justify-end mb-2'>
+          <Button
+            variant='outline'
+            className='hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-50 border-border/50 transition-colors bg-background/50'
+            onClick={() => {
+              const filteredRows = table.getFilteredRowModel().rows.map((row) => row.original);
+              exportToCSV(filteredRows);
+            }}
+          >
+            <Download className='mr-2 h-4 w-4' />
+            <span className='truncate'>Exportar CSV</span>
+          </Button>
+        </div>
+      )}
 
       {/* Mobile Cards View */}
       <div className='block md:hidden space-y-4 mb-4'>
