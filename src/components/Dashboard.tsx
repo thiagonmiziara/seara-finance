@@ -14,6 +14,7 @@ import { SummaryCards } from '@/components/SummaryCards';
 import { TransactionChart } from '@/components/TransactionChart';
 import { TransactionTable } from '@/components/TransactionTable';
 import MonthComparisonChart from '@/components/MonthComparisonChart';
+import DebtsView from '@/components/DebtsView';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,6 +33,7 @@ import { Input } from '@/components/ui/input';
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const [activeTab, setActiveTab] = useState<'overview' | 'debts'>('overview');
   const [period, setPeriod] = useState<'current' | 'previous' | 'custom'>(
     'current',
   );
@@ -133,183 +135,238 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
+
+      {/* Navigation Tabs */}
+      <div className='border-b bg-card w-full hidden md:block'>
+        <div className='container mx-auto px-4 flex gap-6'>
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'overview'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+              }`}
+          >
+            Transações
+          </button>
+          <button
+            onClick={() => setActiveTab('debts')}
+            className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'debts'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+              }`}
+          >
+            Dívidas
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Tabs */}
+      <div className='bg-card border-b p-2 md:hidden flex justify-center sticky top-0 z-10'>
+        <div className='bg-muted/50 p-1 rounded-lg inline-flex max-w-sm w-full'>
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'overview'
+              ? 'bg-background shadow-sm text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+              }`}
+          >
+            Transações
+          </button>
+          <button
+            onClick={() => setActiveTab('debts')}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'debts'
+              ? 'bg-background shadow-sm text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+              }`}
+          >
+            Dívidas
+          </button>
+        </div>
+      </div>
+
       <main className='container mx-auto flex-1 space-y-8 p-4 py-8 md:p-8'>
-        <div className='flex flex-col space-y-6 md:flex-row md:items-end md:justify-between md:space-y-0 bg-card p-4 rounded-xl border border-border/50 shadow-sm'>
-          <div className='flex flex-col space-y-4 md:flex-row md:items-center md:space-x-4 md:space-y-0 w-full lg:w-auto'>
-            <div className='space-y-1.5 flex-1 min-w-[200px]'>
-              <label className='text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1'>
-                Período
-              </label>
-              <Select value={period} onValueChange={(v: any) => setPeriod(v)}>
-                <SelectTrigger className='w-full bg-background/50 border-border/50 focus:ring-primary/20'>
-                  <SelectValue placeholder='Selecione o período' />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='current'>Mês Atual</SelectItem>
-                  <SelectItem value='previous'>Mês Anterior</SelectItem>
-                  <SelectItem value='custom'>Personalizado</SelectItem>
-                </SelectContent>
-              </Select>
+        {activeTab === 'overview' ? (
+          <>
+            <div className='flex flex-col space-y-6 md:flex-row md:items-end md:justify-between md:space-y-0 bg-card p-4 rounded-xl border border-border/50 shadow-sm'>
+              <div className='flex flex-col space-y-4 md:flex-row md:items-center md:space-x-4 md:space-y-0 w-full lg:w-auto'>
+                <div className='space-y-1.5 flex-1 min-w-[200px]'>
+                  <label className='text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1'>
+                    Período
+                  </label>
+                  <Select value={period} onValueChange={(v: any) => setPeriod(v)}>
+                    <SelectTrigger className='w-full bg-background/50 border-border/50 focus:ring-primary/20'>
+                      <SelectValue placeholder='Selecione o período' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='current'>Mês Atual</SelectItem>
+                      <SelectItem value='previous'>Mês Anterior</SelectItem>
+                      <SelectItem value='custom'>Personalizado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {period === 'custom' && (
+                  <div className='flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2 animate-in fade-in slide-in-from-left-4 duration-300 w-full lg:w-auto'>
+                    <div className='space-y-1.5 flex-1 sm:flex-none'>
+                      <label className='text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1 mb-1 block'>
+                        Início
+                      </label>
+                      <Input
+                        type='date'
+                        value={customRange.from}
+                        onChange={(e) =>
+                          setCustomRange((prev) => ({
+                            ...prev,
+                            from: e.target.value,
+                          }))
+                        }
+                        className='bg-background/50 border-border/50 focus:ring-primary/20 h-10'
+                      />
+                    </div>
+                    <div className='hidden sm:block pt-6 text-muted-foreground font-medium text-xs'>
+                      até
+                    </div>
+                    <div className='space-y-1.5 flex-1 sm:flex-none'>
+                      <label className='text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1 mb-1 block'>
+                        Fim
+                      </label>
+                      <Input
+                        type='date'
+                        value={customRange.to}
+                        onChange={(e) =>
+                          setCustomRange((prev) => ({
+                            ...prev,
+                            to: e.target.value,
+                          }))
+                        }
+                        className='bg-background/50 border-border/50 focus:ring-primary/20 h-10'
+                      />
+                    </div>
+                    <div className='space-y-1.5 flex-1 sm:flex-none'>
+                      <label className='text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1 mb-1 block'>
+                        &nbsp;
+                      </label>
+                      <Button
+                        type='button'
+                        variant='outline'
+                        className='w-full sm:w-auto h-10 px-3 py-2 text-sm border-border/50 bg-background/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-50'
+                        onClick={() => {
+                          setPeriod('current');
+                          setCustomRange({
+                            from: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+                            to: format(new Date(), 'yyyy-MM-dd'),
+                          });
+                        }}
+                      >
+                        <RotateCcw className='mr-2 h-3.5 w-3.5' />
+                        Limpar datas
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className='flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-x-2 sm:space-y-0 mt-4 md:mt-0'>
+                <Button
+                  variant='outline'
+                  className='w-full sm:w-auto hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-50 border-border/50 transition-colors bg-background/50'
+                  onClick={() => exportToCSV()}
+                >
+                  <Download className='mr-2 h-4 w-4' />
+                  <span className='truncate'>Exportar CSV</span>
+                </Button>
+                <AddTransactionModal
+                  onAddTransaction={addTransaction}
+                  isAdding={isAdding}
+                  className='w-full sm:w-auto'
+                />
+              </div>
             </div>
 
-            {period === 'custom' && (
-              <div className='flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-2 animate-in fade-in slide-in-from-left-4 duration-300 w-full lg:w-auto'>
-                <div className='space-y-1.5 flex-1 sm:flex-none'>
-                  <label className='text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1 mb-1 block'>
-                    Início
-                  </label>
+            <div className='flex flex-col space-y-2'>
+              <h2 className='text-3xl font-bold tracking-tight'>
+                Resumo Financeiro - {selectedMonthLabel}
+              </h2>
+              <p className='text-muted-foreground'>
+                Visualização completa do seu fluxo no período selecionado.
+              </p>
+            </div>
+
+            {isInitialLoading ? (
+              <div className='grid gap-4 md:grid-cols-3'>
+                <Skeleton className='h-[120px]' />
+                <Skeleton className='h-[120px]' />
+                <Skeleton className='h-[120px]' />
+              </div>
+            ) : (
+              <SummaryCards summary={summary} />
+            )}
+
+            <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-7'>
+              {isInitialLoading ? (
+                <>
+                  <Skeleton className='col-span-4 h-[350px]' />
+                  <Skeleton className='col-span-3 h-[350px]' />
+                </>
+              ) : (
+                <>
+                  <TransactionChart transactions={dashboardTransactions} />
+                  <CategoryChart transactions={dashboardTransactions} />
+                </>
+              )}
+            </div>
+
+            <div className='mt-4 bg-card p-4 rounded-xl border border-border/50'>
+              <div className='flex items-center gap-3 mb-4 flex-col sm:flex-row'>
+                <div className='flex items-center gap-2'>
+                  <label className='text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1'>Mês A</label>
                   <Input
-                    type='date'
-                    value={customRange.from}
-                    onChange={(e) =>
-                      setCustomRange((prev) => ({
-                        ...prev,
-                        from: e.target.value,
-                      }))
-                    }
-                    className='bg-background/50 border-border/50 focus:ring-primary/20 h-10'
+                    type='month'
+                    value={monthA}
+                    onChange={(e) => setMonthA(e.target.value)}
+                    className='h-10'
                   />
                 </div>
-                <div className='hidden sm:block pt-6 text-muted-foreground font-medium text-xs'>
-                  até
-                </div>
-                <div className='space-y-1.5 flex-1 sm:flex-none'>
-                  <label className='text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1 mb-1 block'>
-                    Fim
-                  </label>
+                <div className='flex items-center gap-2'>
+                  <label className='text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1'>Mês B</label>
                   <Input
-                    type='date'
-                    value={customRange.to}
-                    onChange={(e) =>
-                      setCustomRange((prev) => ({
-                        ...prev,
-                        to: e.target.value,
-                      }))
-                    }
-                    className='bg-background/50 border-border/50 focus:ring-primary/20 h-10'
+                    type='month'
+                    value={monthB}
+                    onChange={(e) => setMonthB(e.target.value)}
+                    className='h-10'
                   />
-                </div>
-                <div className='space-y-1.5 flex-1 sm:flex-none'>
-                  <label className='text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1 mb-1 block'>
-                    &nbsp;
-                  </label>
-                  <Button
-                    type='button'
-                    variant='outline'
-                    className='w-full sm:w-auto h-10 px-3 py-2 text-sm border-border/50 bg-background/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-50'
-                    onClick={() => {
-                      setPeriod('current');
-                      setCustomRange({
-                        from: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-                        to: format(new Date(), 'yyyy-MM-dd'),
-                      });
-                    }}
-                  >
-                    <RotateCcw className='mr-2 h-3.5 w-3.5' />
-                    Limpar datas
-                  </Button>
                 </div>
               </div>
-            )}
-          </div>
 
-          <div className='flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-x-2 sm:space-y-0 mt-4 md:mt-0'>
-            <Button
-              variant='outline'
-              className='w-full sm:w-auto hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-50 border-border/50 transition-colors bg-background/50'
-              onClick={() => exportToCSV()}
-            >
-              <Download className='mr-2 h-4 w-4' />
-              <span className='truncate'>Exportar CSV</span>
-            </Button>
-            <AddTransactionModal
-              onAddTransaction={addTransaction}
-              isAdding={isAdding}
-              className='w-full sm:w-auto'
-            />
-          </div>
-        </div>
+              <div>
+                <MonthComparisonChart
+                  transactions={dashboardTransactions}
+                  monthA={new Date(monthA + '-01T00:00:00')}
+                  monthB={new Date(monthB + '-01T00:00:00')}
+                />
+              </div>
+            </div>
 
-        <div className='flex flex-col space-y-2'>
-          <h2 className='text-3xl font-bold tracking-tight'>
-            Resumo Financeiro - {selectedMonthLabel}
-          </h2>
-          <p className='text-muted-foreground'>
-            Visualização completa do seu fluxo no período selecionado.
-          </p>
-        </div>
-
-        {isInitialLoading ? (
-          <div className='grid gap-4 md:grid-cols-3'>
-            <Skeleton className='h-[120px]' />
-            <Skeleton className='h-[120px]' />
-            <Skeleton className='h-[120px]' />
-          </div>
+            <div className='space-y-4'>
+              <h3 className='text-xl font-semibold tracking-tight'>Transações</h3>
+              {isInitialLoading ? (
+                <div className='space-y-2'>
+                  <Skeleton className='h-[50px] w-full' />
+                  <Skeleton className='h-[200px] w-full' />
+                </div>
+              ) : (
+                <TransactionTable
+                  data={transactions}
+                  onDelete={removeTransaction}
+                  isDeleting={isDeleting}
+                  exportToCSV={exportToCSV}
+                />
+              )}
+            </div>
+          </>
         ) : (
-          <SummaryCards summary={summary} />
+          <DebtsView />
         )}
-
-        <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-7'>
-          {isInitialLoading ? (
-            <>
-              <Skeleton className='col-span-4 h-[350px]' />
-              <Skeleton className='col-span-3 h-[350px]' />
-            </>
-          ) : (
-            <>
-              <TransactionChart transactions={dashboardTransactions} />
-              <CategoryChart transactions={dashboardTransactions} />
-            </>
-          )}
-        </div>
-
-        <div className='mt-4 bg-card p-4 rounded-xl border border-border/50'>
-          <div className='flex items-center gap-3 mb-4 flex-col sm:flex-row'>
-            <div className='flex items-center gap-2'>
-              <label className='text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1'>Mês A</label>
-              <Input
-                type='month'
-                value={monthA}
-                onChange={(e) => setMonthA(e.target.value)}
-                className='h-10'
-              />
-            </div>
-            <div className='flex items-center gap-2'>
-              <label className='text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1'>Mês B</label>
-              <Input
-                type='month'
-                value={monthB}
-                onChange={(e) => setMonthB(e.target.value)}
-                className='h-10'
-              />
-            </div>
-          </div>
-
-          <div>
-            <MonthComparisonChart
-              transactions={dashboardTransactions}
-              monthA={new Date(monthA + '-01T00:00:00')}
-              monthB={new Date(monthB + '-01T00:00:00')}
-            />
-          </div>
-        </div>
-
-        <div className='space-y-4'>
-          <h3 className='text-xl font-semibold tracking-tight'>Transações</h3>
-          {isInitialLoading ? (
-            <div className='space-y-2'>
-              <Skeleton className='h-[50px] w-full' />
-              <Skeleton className='h-[200px] w-full' />
-            </div>
-          ) : (
-            <TransactionTable
-              data={transactions}
-              onDelete={removeTransaction}
-              isDeleting={isDeleting}
-              exportToCSV={exportToCSV}
-            />
-          )}
-        </div>
       </main>
     </div>
   );

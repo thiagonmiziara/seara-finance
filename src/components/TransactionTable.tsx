@@ -51,13 +51,14 @@ export function TransactionTable({
   const { categories } = useCategories();
   const statusConfig: Record<
     string,
-    { label: string; textClass: string; dotClass: string; itemClass: string }
+    { label: string; textClass: string; dotClass: string; itemClass: string; pillClass?: string }
   > = {
     pago: {
       label: 'Pago',
       textClass: 'text-primary',
       dotClass: 'bg-primary',
       itemClass: 'text-primary data-[highlighted]:text-primary',
+      pillClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
     },
     a_pagar: {
       label: 'A Pagar',
@@ -65,12 +66,14 @@ export function TransactionTable({
       dotClass: 'bg-red-400',
       itemClass:
         'text-red-400 font-bold data-[highlighted]:text-red-400 data-[highlighted]:font-bold',
+      pillClass: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
     },
     recebido: {
       label: 'Recebido',
       textClass: 'text-primary',
       dotClass: 'bg-primary',
       itemClass: 'text-primary data-[highlighted]:text-primary',
+      pillClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
     },
     a_receber: {
       label: 'A Receber',
@@ -78,6 +81,7 @@ export function TransactionTable({
       dotClass: 'bg-orange-500',
       itemClass:
         'text-orange-500 font-medium data-[highlighted]:text-orange-500 data-[highlighted]:font-medium',
+      pillClass: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
     },
   };
   const [selectedCategoryFilter, setSelectedCategoryFilter] =
@@ -181,14 +185,16 @@ export function TransactionTable({
         const date = row.original.date;
         const formattedDate = formatDate(date);
 
-        const { label, textClass } = statusConfig[
+        const { label, pillClass } = statusConfig[
           status as keyof typeof statusConfig
-        ] || { label: status, textClass: '' };
+        ] || { label: status, pillClass: '' };
 
         return (
-          <div className='flex flex-col'>
-            <span className={textClass}>{label}</span>
-            <span className='text-xs text-muted-foreground'>
+          <div className='flex flex-col items-start gap-1'>
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${pillClass}`}>
+              {label}
+            </span>
+            <span className='text-[10px] text-muted-foreground'>
               {formattedDate}
             </span>
           </div>
@@ -407,23 +413,6 @@ export function TransactionTable({
         </div>
       </div>
 
-      {/* Export CSV Button */}
-      {exportToCSV && (
-        <div className='flex justify-end mb-2'>
-          <Button
-            variant='outline'
-            className='hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-50 border-border/50 transition-colors bg-background/50'
-            onClick={() => {
-              const filteredRows = table.getFilteredRowModel().rows.map((row) => row.original);
-              exportToCSV(filteredRows);
-            }}
-          >
-            <Download className='mr-2 h-4 w-4' />
-            <span className='truncate'>Exportar CSV</span>
-          </Button>
-        </div>
-      )}
-
       {/* Mobile Cards View */}
       <div className='block md:hidden space-y-4 mb-4'>
         {table.getRowModel().rows?.length ? (
@@ -550,12 +539,12 @@ export function TransactionTable({
       </div>
 
       {/* Desktop Table View */}
-      <div className='hidden md:block rounded-md border overflow-hidden'>
+      <div className='hidden md:block rounded-xl border border-border/50 bg-card overflow-hidden'>
         <div className='overflow-x-auto'>
           <Table className='min-w-[600px]'>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
+                <TableRow key={headerGroup.id} className='hover:bg-transparent'>
                   {headerGroup.headers.map((header) => {
                     return (
                       <TableHead key={header.id}>

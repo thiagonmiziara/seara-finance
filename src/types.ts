@@ -33,3 +33,20 @@ export interface FinanceContextType {
     balance: number;
   };
 }
+
+export const debtSchema = z.object({
+  id: z.string().uuid(),
+  description: z.string().min(1, 'Descrição é obrigatória'),
+  totalAmount: z.number().min(0.01, 'Valor deve ser maior que zero'),
+  installments: z.number().min(1, 'Deve ter ao menos 1 parcela'),
+  installmentAmount: z.number().min(0, 'Valor da parcela não pode ser negativo'),
+  paidInstallments: z.number().int().nonnegative().optional(),
+  status: z.enum(['a_pagar', 'pago']),
+  dueDate: z.string(), // ISO string
+  createdAt: z.string(), // ISO string
+});
+
+export type Debt = z.infer<typeof debtSchema>;
+
+export const debtFormSchema = debtSchema.omit({ id: true, createdAt: true });
+export type DebtFormValues = z.infer<typeof debtFormSchema>;
