@@ -12,7 +12,7 @@ export default defineConfig({
         react(),
         VitePWA({
             registerType: 'autoUpdate',
-            includeAssets: ['favicon.ico', 'logonova.png', 'apple-touch-icon.png'],
+            includeAssets: ['favicon.ico', 'pwa-192x192.png', 'pwa-512x512.png', 'apple-touch-icon.png'],
             manifest: {
                 name: 'Seara Finance',
                 short_name: 'SearaFinance',
@@ -21,17 +21,17 @@ export default defineConfig({
                 background_color: '#1A1A1A',
                 icons: [
                     {
-                        src: 'logonova.png',
+                        src: 'pwa-192x192.png',
                         sizes: '192x192',
                         type: 'image/png'
                     },
                     {
-                        src: 'logonova.png',
+                        src: 'pwa-512x512.png',
                         sizes: '512x512',
                         type: 'image/png'
                     },
                     {
-                        src: 'logonova.png',
+                        src: 'pwa-512x512.png',
                         sizes: '512x512',
                         type: 'image/png',
                         purpose: 'any maskable'
