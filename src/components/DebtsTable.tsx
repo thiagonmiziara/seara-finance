@@ -10,7 +10,15 @@ import {
 } from '@/components/ui/table';
 import { format, parseISO, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Check, CheckCheck, Trash2 } from 'lucide-react';
+import { Check, CheckCheck, Trash2, MoreVertical } from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
 
 interface DebtsTableProps {
     debts: Debt[];
@@ -66,37 +74,48 @@ export function DebtsTable({ debts, onDelete, onIncrementInstallment, onSettleDe
                                         </span>
                                     </div>
                                 </div>
-                                <div className='flex gap-1'>
-                                    {debt.status !== 'pago' && (
-                                        <>
-                                            <Button
-                                                variant='ghost'
-                                                size='icon'
-                                                className='h-8 w-8 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
-                                                onClick={() => onIncrementInstallment(debt)}
-                                            >
-                                                <Check className='h-4 w-4' />
-                                            </Button>
-                                            <Button
-                                                variant='ghost'
-                                                size='icon'
-                                                className='h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
-                                                onClick={() => onSettleDebt(debt)}
-                                            >
-                                                <CheckCheck className='h-4 w-4' />
-                                            </Button>
-                                        </>
-                                    )}
-                                    <Button
-                                        variant='ghost'
-                                        size='icon'
-                                        className='h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors'
-                                        disabled={isDeleting}
-                                        onClick={() => onDelete(debt.id)}
-                                    >
-                                        <Trash2 className='h-4 w-4' />
-                                    </Button>
-                                </div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant='ghost'
+                                            size='icon'
+                                            className='h-8 w-8 text-muted-foreground'
+                                        >
+                                            <MoreVertical className='h-4 w-4' />
+                                            <span className='sr-only'>Ações</span>
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-48">
+                                        {debt.status !== 'pago' && (
+                                            <>
+                                                <DropdownMenuItem
+                                                    onClick={() => onIncrementInstallment(debt)}
+                                                    className="text-emerald-500 focus:text-emerald-600 focus:bg-emerald-50 dark:focus:bg-emerald-900/20"
+                                                >
+                                                    <Check className='mr-2 h-4 w-4' />
+                                                    <span>Pagar 1 Parcela</span>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => onSettleDebt(debt)}
+                                                    className="text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50 dark:focus:bg-emerald-900/20"
+                                                >
+                                                    <CheckCheck className='mr-2 h-4 w-4' />
+                                                    <span>Quitar Dívida</span>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                            </>
+                                        )}
+                                        <DropdownMenuItem
+                                            disabled={isDeleting}
+                                            onClick={() => onDelete(debt.id)}
+                                            className="text-red-500 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
+                                        >
+                                            <Trash2 className='mr-2 h-4 w-4' />
+                                            <span>Excluir dívida</span>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
                             </div>
 
                             <div className='flex items-center justify-between'>
@@ -109,8 +128,8 @@ export function DebtsTable({ debts, onDelete, onIncrementInstallment, onSettleDe
                                     </p>
                                 </div>
                                 <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-current/10 ${debt.status === 'pago' || remainingInstallments === 0
-                                        ? 'bg-emerald-500/10 text-emerald-500'
-                                        : 'bg-red-500/10 text-red-400'
+                                    ? 'bg-emerald-500/10 text-emerald-500'
+                                    : 'bg-red-500/10 text-red-400'
                                     }`}>
                                     {debt.status === 'pago' || remainingInstallments === 0 ? 'Pago' : 'A Pagar'}
                                 </div>
@@ -226,40 +245,48 @@ export function DebtsTable({ debts, onDelete, onIncrementInstallment, onSettleDe
                                             </span>
                                         </TableCell>
                                         <TableCell className='text-right'>
-                                            <div className='flex items-center justify-end gap-2'>
-                                                {debt.status !== 'pago' && (
-                                                    <>
-                                                        <Button
-                                                            variant='ghost'
-                                                            size='icon'
-                                                            title='Pagar 1 Parcela'
-                                                            className='h-8 w-8 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
-                                                            onClick={() => onIncrementInstallment(debt)}
-                                                        >
-                                                            <Check className='h-4 w-4' />
-                                                        </Button>
-                                                        <Button
-                                                            variant='ghost'
-                                                            size='icon'
-                                                            title='Quitar Dívida'
-                                                            className='h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
-                                                            onClick={() => onSettleDebt(debt)}
-                                                        >
-                                                            <CheckCheck className='h-4 w-4' />
-                                                        </Button>
-                                                    </>
-                                                )}
-                                                <Button
-                                                    variant='ghost'
-                                                    size='icon'
-                                                    title='Excluir'
-                                                    className='h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
-                                                    disabled={isDeleting}
-                                                    onClick={() => onDelete(debt.id)}
-                                                >
-                                                    <Trash2 className='h-4 w-4' />
-                                                </Button>
-                                            </div>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        variant='ghost'
+                                                        size='icon'
+                                                        className='h-8 w-8 text-muted-foreground'
+                                                    >
+                                                        <MoreVertical className='h-4 w-4' />
+                                                        <span className='sr-only'>Ações</span>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-48">
+                                                    {debt.status !== 'pago' && (
+                                                        <>
+                                                            <DropdownMenuItem
+                                                                onClick={() => onIncrementInstallment(debt)}
+                                                                className="text-emerald-500 focus:text-emerald-600 focus:bg-emerald-50 dark:focus:bg-emerald-900/20"
+                                                            >
+                                                                <Check className='mr-2 h-4 w-4' />
+                                                                <span>Pagar 1 Parcela</span>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                onClick={() => onSettleDebt(debt)}
+                                                                className="text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50 dark:focus:bg-emerald-900/20"
+                                                            >
+                                                                <CheckCheck className='mr-2 h-4 w-4' />
+                                                                <span>Quitar Dívida</span>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
+                                                        </>
+                                                    )}
+                                                    <DropdownMenuItem
+                                                        disabled={isDeleting}
+                                                        onClick={() => onDelete(debt.id)}
+                                                        className="text-red-500 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
+                                                    >
+                                                        <Trash2 className='mr-2 h-4 w-4' />
+                                                        <span>Excluir</span>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+
                                         </TableCell>
                                     </TableRow>
                                 );

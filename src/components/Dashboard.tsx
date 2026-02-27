@@ -96,13 +96,14 @@ export default function Dashboard() {
       <header className='border-b bg-card'>
         <div className='container mx-auto flex h-16 items-center justify-between px-4'>
           <div className='flex items-center gap-2'>
-            <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm ring-1 ring-primary/20'>
-              <span className='font-bold text-sm'>SF</span>
+            <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-black shadow-sm overflow-hidden'>
+              <img src="/icone.png" alt="Logo" className="h-full w-full object-contain" />
             </div>
             <span className='text-xl font-bold tracking-tight'>
               Seara Finance
             </span>
           </div>
+
           <div className='flex items-center gap-4'>
             <div className='flex items-center gap-2'>
               <span className='text-sm text-muted-foreground hidden md:inline-block'>
@@ -137,7 +138,7 @@ export default function Dashboard() {
       </header>
 
       {/* Navigation Tabs */}
-      <div className='border-b bg-card w-full hidden md:block'>
+      < div className='border-b bg-card w-full hidden md:block' >
         <div className='container mx-auto px-4 flex gap-6'>
           <button
             onClick={() => setActiveTab('overview')}
@@ -158,10 +159,10 @@ export default function Dashboard() {
             Dívidas
           </button>
         </div>
-      </div>
+      </div >
 
       {/* Mobile Tabs */}
-      <div className='bg-card border-b p-2 md:hidden flex justify-center sticky top-0 z-10'>
+      < div className='bg-card border-b p-2 md:hidden flex justify-center sticky top-0 z-10' >
         <div className='bg-muted/50 p-1 rounded-lg inline-flex max-w-sm w-full'>
           <button
             onClick={() => setActiveTab('overview')}
@@ -182,7 +183,7 @@ export default function Dashboard() {
             Dívidas
           </button>
         </div>
-      </div>
+      </div >
 
       <main className='container mx-auto flex-1 space-y-8 p-4 py-8 md:p-8'>
         {activeTab === 'overview' ? (
@@ -367,6 +368,6 @@ export default function Dashboard() {
           <DebtsView />
         )}
       </main>
-    </div>
+    </div >
   );
 }

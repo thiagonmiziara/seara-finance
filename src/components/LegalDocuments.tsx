@@ -17,19 +17,22 @@ export function TermsOfServiceDialog() {
             </DialogTrigger>
             <DialogContent className="max-w-[800px] max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Termos de Serviço - Seara Finance</DialogTitle>
+                    <DialogTitle>Termos de Serviço - Mordomia Seara</DialogTitle>
+
                     <DialogDescription>
                         Última atualização: 10 de Fevereiro de 2026
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 text-sm text-foreground/80">
                     <p>
-                        Bem-vindo ao Seara Finance. Ao acessar ou usar nosso sistema, você concorda em cumprir estes Termos de Serviço.
+                        Bem-vindo ao Mordomia Seara. Ao acessar ou usar nosso sistema, você concorda em cumprir estes Termos de Serviço.
+
                     </p>
 
                     <h3 className="text-lg font-semibold text-foreground">1. Uso do Sistema</h3>
                     <p>
-                        O Seara Finance é uma ferramenta de gestão financeira destinada exclusivamente ao uso interno. O acesso é restrito a pessoal autorizado.
+                        O Mordomia Seara é uma ferramenta de gestão financeira destinada exclusivamente ao uso interno. O acesso é restrito a pessoal autorizado.
+
                     </p>
 
                     <h3 className="text-lg font-semibold text-foreground">2. Responsabilidades do Usuário</h3>
@@ -62,14 +65,16 @@ export function PrivacyPolicyDialog() {
             </DialogTrigger>
             <DialogContent className="max-w-[800px] max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Política de Privacidade - Seara Finance</DialogTitle>
+                    <DialogTitle>Política de Privacidade - Mordomia Seara</DialogTitle>
+
                     <DialogDescription>
                         Como tratamos seus dados
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 text-sm text-foreground/80">
                     <p>
-                        A sua privacidade é importante para nós. Esta política descreve como o Seara Finance coleta, usa e protege suas informações.
+                        A sua privacidade é importante para nós. Esta política descreve como o Mordomia Seara coleta, usa e protege suas informações.
+
                     </p>
 
                     <h3 className="text-lg font-semibold text-foreground">1. Coleta de Informações</h3>
