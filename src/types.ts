@@ -9,12 +9,21 @@ export const transactionSchema = z.object({
   status: z.enum(['pago', 'a_pagar', 'recebido', 'a_receber']),
   date: z.string(), // Transaction date (ISO string)
   createdAt: z.string(), // Registration date (ISO string)
+  cardId: z.string().optional(),
+  installments: z.object({
+    current: z.number(),
+    total: z.number()
+  }).optional(),
 });
 
 export type Transaction = z.infer<typeof transactionSchema>;
 
 export const transactionFormSchema = transactionSchema
-  .omit({ id: true, createdAt: true })
+  .omit({ id: true, createdAt: true, installments: true })
+  .extend({
+    cardId: z.string().optional(),
+    installmentsTotal: z.number().min(1).max(48).optional(),
+  })
   .refine((data) => data.category !== 'criar_categoria', {
     message:
       'Selecione uma categoria ou clique em Criar para adicionar a nova categoria antes de salvar.',
@@ -50,3 +59,18 @@ export type Debt = z.infer<typeof debtSchema>;
 
 export const debtFormSchema = debtSchema.omit({ id: true, createdAt: true });
 export type DebtFormValues = z.infer<typeof debtFormSchema>;
+
+export const creditCardSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1, 'Nome do cartão é obrigatório'),
+  limit: z.number().min(0.01, 'Limite deve ser maior que zero'),
+  closingDay: z.number().min(1).max(31),
+  dueDay: z.number().min(1).max(31),
+  color: z.string(),
+  createdAt: z.string(), // ISO string
+});
+
+export type CreditCard = z.infer<typeof creditCardSchema>;
+
+export const creditCardFormSchema = creditCardSchema.omit({ id: true, createdAt: true });
+export type CreditCardFormValues = z.infer<typeof creditCardFormSchema>;

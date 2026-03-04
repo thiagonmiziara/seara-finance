@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from './useAuth';
+import { useAccount } from './useAccount';
 import { CATEGORIES as DEFAULT_CATEGORIES } from '@/lib/categories';
 
 type Category = { value: string; label: string; color: string; id?: string };
@@ -45,6 +46,7 @@ const CategoriesContext = createContext<CategoriesContextValue | undefined>(
 
 function useCategoriesInternal() {
   const { user } = useAuth();
+  const { accountType } = useAccount();
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -77,7 +79,7 @@ function useCategoriesInternal() {
     }
 
     const q = query(
-      collection(db, 'users', user.id, 'categories'),
+      collection(db, 'users', user.id, 'accounts', accountType, 'categories'),
       orderBy('label', 'asc'),
     );
 
@@ -114,7 +116,7 @@ function useCategoriesInternal() {
 
           for (const lc of toSync) {
             try {
-              const collRef = collection(db, 'users', user.id, 'categories');
+              const collRef = collection(db, 'users', user.id, 'accounts', accountType, 'categories');
               await addDoc(collRef, {
                 value: lc.value,
                 label: lc.label,
@@ -145,7 +147,7 @@ function useCategoriesInternal() {
     );
 
     return () => unsub();
-  }, [user]);
+  }, [user, accountType]);
 
   const addCategory = useCallback(
     async ({ label, color }: { label: string; color?: string }) => {
@@ -192,7 +194,7 @@ function useCategoriesInternal() {
 
       if (user) {
         try {
-          const collRef = collection(db, 'users', user.id, 'categories');
+          const collRef = collection(db, 'users', user.id, 'accounts', accountType, 'categories');
 
           // quick check for existing value
           const existing = await getDocs(
@@ -252,7 +254,7 @@ function useCategoriesInternal() {
                   ),
                 ),
               );
-            } catch (e) {}
+            } catch (e) { }
             return next;
           });
           return newCat;
@@ -302,7 +304,7 @@ function useCategoriesInternal() {
       });
       return newCat;
     },
-    [user, categories],
+    [user, categories, accountType],
   );
 
   const deleteCategory = useCallback(
@@ -324,7 +326,7 @@ function useCategoriesInternal() {
 
       try {
         const q = query(
-          collection(db, 'users', user.id, 'categories'),
+          collection(db, 'users', user.id, 'accounts', accountType, 'categories'),
           where('value', '==', value),
         );
         const snap = await getDocs(q);
@@ -338,7 +340,7 @@ function useCategoriesInternal() {
             const localCats: Category[] = raw ? JSON.parse(raw) : [];
             const next = localCats.filter((c) => c.value !== value);
             localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
-          } catch (e) {}
+          } catch (e) { }
           return;
         }
 
@@ -356,7 +358,7 @@ function useCategoriesInternal() {
           const localCats: Category[] = raw ? JSON.parse(raw) : [];
           const next = localCats.filter((c) => c.value !== value);
           localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
-        } catch (e) {}
+        } catch (e) { }
       } catch (e: any) {
         // If deletion fails (for example due to Firestore permissions),
         // fallback to removing the category locally and do not log to console.
@@ -374,7 +376,7 @@ function useCategoriesInternal() {
         return;
       }
     },
-    [user],
+    [user, accountType],
   );
 
   return { categories, loading, error, addCategory, deleteCategory } as const;

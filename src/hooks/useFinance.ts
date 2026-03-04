@@ -5,12 +5,15 @@ import {
   addDoc,
   deleteDoc,
   doc,
+  getDoc,
   onSnapshot,
   query,
   orderBy,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from './useAuth';
+import { useAccount } from './useAccount';
 import { useCategories } from './useCategories';
 import { CATEGORIES as STATIC_CATEGORIES } from '@/lib/categories';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -30,9 +33,10 @@ export interface DateRange {
 
 export function useFinance(filter?: DateRange) {
   const { user } = useAuth();
+  const { accountType } = useAccount();
   const { categories } = useCategories();
   const queryClient = useQueryClient();
-  const queryKey = ['transactions', user?.id];
+  const queryKey = ['transactions', user?.id, accountType];
 
   // Read: Fetch transactions using useQuery + onSnapshot sync
   const { data: transactions = [], isPending } = useQuery<Transaction[]>({
@@ -47,7 +51,7 @@ export function useFinance(filter?: DateRange) {
     if (!user) return;
 
     const q = query(
-      collection(db, 'users', user.id, 'transactions'),
+      collection(db, 'users', user.id, 'accounts', accountType, 'transactions'),
       orderBy('date', 'desc'),
     );
 
@@ -85,14 +89,79 @@ export function useFinance(filter?: DateRange) {
     });
 
     return () => unsubscribe();
-  }, [user, queryClient, queryKey]);
+  }, [user, accountType, queryClient, queryKey]);
 
   // Create: Use mutation with Optimistic Update
   const addMutation = useMutation({
     mutationFn: async (data: TransactionFormValues) => {
       if (!user) throw new Error('User not authenticated');
-      return addDoc(collection(db, 'users', user.id, 'transactions'), {
-        ...data,
+
+      const { cardId, installmentsTotal, ...restData } = data;
+
+      if (data.type === 'expense' && cardId) {
+        // Fetch card details
+        const cardRef = doc(db, 'users', user.id, 'accounts', accountType, 'cards', cardId);
+        const cardSnap = await getDoc(cardRef);
+        if (!cardSnap.exists()) throw new Error('Card not found');
+        const card = cardSnap.data() as { closingDay: number; dueDay: number; name: string };
+
+        const purchaseDate = new Date(data.date + 'T00:00:00');
+        const batch = writeBatch(db);
+        const totalInst = installmentsTotal || 1;
+        const baseAmount = data.amount / totalInst;
+
+        // Calculate first due date
+        let firstInvoiceMonth = purchaseDate.getMonth();
+        const firstInvoiceYear = purchaseDate.getFullYear();
+        if (purchaseDate.getDate() >= card.closingDay) {
+          firstInvoiceMonth += 1;
+        }
+        const firstDueDate = new Date(firstInvoiceYear, firstInvoiceMonth, card.dueDay);
+
+        // Create installment transactions
+        for (let i = 1; i <= totalInst; i++) {
+          let invoiceMonth = purchaseDate.getMonth();
+          const invoiceYear = purchaseDate.getFullYear();
+
+          if (purchaseDate.getDate() >= card.closingDay) {
+            invoiceMonth += 1;
+          }
+          invoiceMonth += (i - 1);
+
+          const dueDate = new Date(invoiceYear, invoiceMonth, card.dueDay);
+
+          const installRef = doc(collection(db, 'users', user.id, 'accounts', accountType, 'transactions'));
+          batch.set(installRef, {
+            ...restData,
+            amount: baseAmount,
+            cardId: cardId,
+            installments: { current: i, total: totalInst },
+            date: dueDate.toISOString().split('T')[0],
+            status: 'a_pagar',
+            createdAt: new Date().toISOString()
+          });
+        }
+
+        // Also create a Debt entry for consolidated view in Dívidas tab
+        const debtRef = doc(collection(db, 'users', user.id, 'accounts', accountType, 'debts'));
+        batch.set(debtRef, {
+          description: `${data.description} (${card.name} - ${totalInst}x)`,
+          totalAmount: data.amount,
+          installments: totalInst,
+          installmentAmount: baseAmount,
+          paidInstallments: 0,
+          status: 'a_pagar',
+          dueDate: firstDueDate.toISOString().split('T')[0],
+          createdAt: new Date().toISOString(),
+        });
+
+        await batch.commit();
+        return;
+      }
+
+      // Normal transaction
+      return addDoc(collection(db, 'users', user.id, 'accounts', accountType, 'transactions'), {
+        ...restData,
         createdAt: new Date().toISOString(),
       });
     },
@@ -123,11 +192,36 @@ export function useFinance(filter?: DateRange) {
     },
   });
 
+  const addTransferMutation = useMutation({
+    mutationFn: async ({ sourceData, destinationData, destinationAccountType }: { sourceData: TransactionFormValues, destinationData: TransactionFormValues, destinationAccountType: string }) => {
+      if (!user) throw new Error('User not authenticated');
+
+      const batch = writeBatch(db);
+
+      const sourceRef = doc(collection(db, 'users', user.id, 'accounts', accountType, 'transactions'));
+      batch.set(sourceRef, {
+        ...sourceData,
+        createdAt: new Date().toISOString(),
+      });
+
+      const destRef = doc(collection(db, 'users', user.id, 'accounts', destinationAccountType, 'transactions'));
+      batch.set(destRef, {
+        ...destinationData,
+        createdAt: new Date().toISOString(),
+      });
+
+      await batch.commit();
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
+
   // Delete: Use mutation with Optimistic Update
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       if (!user) throw new Error('User not authenticated');
-      return deleteDoc(doc(db, 'users', user.id, 'transactions', id));
+      return deleteDoc(doc(db, 'users', user.id, 'accounts', accountType, 'transactions', id));
     },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey });
@@ -169,7 +263,11 @@ export function useFinance(filter?: DateRange) {
       let txDate: Date | null = null;
       try {
         if (isPendingStatus) {
-          txDate = t.createdAt ? parseTransactionDate(t.createdAt) : null;
+          if (t.cardId) {
+            txDate = t.date ? parseTransactionDate(t.date) : null;
+          } else {
+            txDate = t.createdAt ? parseTransactionDate(t.createdAt) : null;
+          }
         } else {
           txDate = t.date ? parseTransactionDate(t.date) : null;
         }
@@ -265,12 +363,13 @@ export function useFinance(filter?: DateRange) {
     transactions: tableTransactions,
     dashboardTransactions: dateFilteredTransactions,
     addTransaction: addMutation.mutateAsync,
+    addTransfer: addTransferMutation.mutateAsync,
     removeTransaction: deleteMutation.mutateAsync,
     exportToCSV,
     summary,
-    isAdding: addMutation.isPending,
+    isAdding: addMutation.isPending || addTransferMutation.isPending,
     isDeleting: deleteMutation.isPending,
     isInitialLoading: isPending && user !== null,
-    isLoading: isPending || addMutation.isPending || deleteMutation.isPending,
+    isLoading: isPending || addMutation.isPending || addTransferMutation.isPending || deleteMutation.isPending,
   };
 }

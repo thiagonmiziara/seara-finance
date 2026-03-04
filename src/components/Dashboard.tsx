@@ -15,10 +15,12 @@ import { TransactionChart } from '@/components/TransactionChart';
 import { TransactionTable } from '@/components/TransactionTable';
 import MonthComparisonChart from '@/components/MonthComparisonChart';
 import DebtsView from '@/components/DebtsView';
+import CardsView from '@/components/CardsView';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useFinance } from '@/hooks/useFinance';
+import { useMigration } from '@/hooks/useMigration';
 import { useTheme } from '@/hooks/useTheme';
 import { Download, LogOut, Moon, RotateCcw, Sun } from 'lucide-react';
 import {
@@ -29,11 +31,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { AccountSwitcher } from '@/components/AccountSwitcher';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
+  useMigration(); // Run migration logic in the background
   const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'overview' | 'debts'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'debts' | 'cards'>('overview');
   const [period, setPeriod] = useState<'current' | 'previous' | 'custom'>(
     'current',
   );
@@ -79,6 +83,7 @@ export default function Dashboard() {
     transactions,
     dashboardTransactions,
     addTransaction,
+    addTransfer,
     removeTransaction,
     summary,
     exportToCSV,
@@ -105,6 +110,10 @@ export default function Dashboard() {
           </div>
 
           <div className='flex items-center gap-4'>
+            <div className='hidden sm:block'>
+              <AccountSwitcher />
+            </div>
+
             <div className='flex items-center gap-2'>
               <span className='text-sm text-muted-foreground hidden md:inline-block'>
                 Olá, {user?.name}
@@ -137,6 +146,11 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {/* Mobile Account Switcher */}
+      <div className='sm:hidden px-4 py-3 border-b bg-card w-full flex justify-center shadow-sm z-20 relative'>
+        <AccountSwitcher />
+      </div>
+
       {/* Navigation Tabs */}
       < div className='border-b bg-card w-full hidden md:block' >
         <div className='container mx-auto px-4 flex gap-6'>
@@ -157,6 +171,15 @@ export default function Dashboard() {
               }`}
           >
             Dívidas
+          </button>
+          <button
+            onClick={() => setActiveTab('cards')}
+            className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'cards'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+              }`}
+          >
+            Cartões
           </button>
         </div>
       </div >
@@ -181,6 +204,15 @@ export default function Dashboard() {
               }`}
           >
             Dívidas
+          </button>
+          <button
+            onClick={() => setActiveTab('cards')}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'cards'
+              ? 'bg-background shadow-sm text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+              }`}
+          >
+            Cartões
           </button>
         </div>
       </div >
@@ -278,6 +310,7 @@ export default function Dashboard() {
                 </Button>
                 <AddTransactionModal
                   onAddTransaction={addTransaction}
+                  onAddTransfer={addTransfer}
                   isAdding={isAdding}
                   className='w-full sm:w-auto'
                 />
@@ -364,8 +397,10 @@ export default function Dashboard() {
               )}
             </div>
           </>
-        ) : (
+        ) : activeTab === 'debts' ? (
           <DebtsView />
+        ) : (
+          <CardsView />
         )}
       </main>
     </div >

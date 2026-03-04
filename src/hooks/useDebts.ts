@@ -12,12 +12,14 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from './useAuth';
+import { useAccount } from './useAccount';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export function useDebts() {
     const { user } = useAuth();
+    const { accountType } = useAccount();
     const queryClient = useQueryClient();
-    const queryKey = ['debts', user?.id];
+    const queryKey = ['debts', user?.id, accountType];
 
     const { data: debts = [], isPending } = useQuery<Debt[]>({
         queryKey,
@@ -30,7 +32,7 @@ export function useDebts() {
         if (!user) return;
 
         const q = query(
-            collection(db, 'users', user.id, 'debts'),
+            collection(db, 'users', user.id, 'accounts', accountType, 'debts'),
             orderBy('createdAt', 'desc')
         );
 
@@ -62,12 +64,12 @@ export function useDebts() {
         });
 
         return () => unsubscribe();
-    }, [user, queryClient, queryKey]);
+    }, [user, accountType, queryClient, queryKey]);
 
     const addMutation = useMutation({
         mutationFn: async (data: DebtFormValues) => {
             if (!user) throw new Error('User not authenticated');
-            return addDoc(collection(db, 'users', user.id, 'debts'), {
+            return addDoc(collection(db, 'users', user.id, 'accounts', accountType, 'debts'), {
                 ...data,
                 paidInstallments: 0,
                 createdAt: new Date().toISOString(),
@@ -101,7 +103,7 @@ export function useDebts() {
     const updateMutation = useMutation({
         mutationFn: async ({ id, data }: { id: string; data: Partial<DebtFormValues> }) => {
             if (!user) throw new Error('User not authenticated');
-            return updateDoc(doc(db, 'users', user.id, 'debts', id), data);
+            return updateDoc(doc(db, 'users', user.id, 'accounts', accountType, 'debts', id), data);
         },
         onMutate: async ({ id, data }) => {
             await queryClient.cancelQueries({ queryKey });
@@ -126,7 +128,7 @@ export function useDebts() {
     const deleteMutation = useMutation({
         mutationFn: async (id: string) => {
             if (!user) throw new Error('User not authenticated');
-            return deleteDoc(doc(db, 'users', user.id, 'debts', id));
+            return deleteDoc(doc(db, 'users', user.id, 'accounts', accountType, 'debts', id));
         },
         onMutate: async (id) => {
             await queryClient.cancelQueries({ queryKey });
