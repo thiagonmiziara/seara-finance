@@ -159,7 +159,11 @@ export default function CardsView() {
                       locale: ptBR,
                     });
                     if (!invoicesByMonth[key]) {
-                      invoicesByMonth[key] = { month: monthLabel, total: 0, count: 0 };
+                      invoicesByMonth[key] = {
+                        month: monthLabel,
+                        total: 0,
+                        count: 0,
+                      };
                     }
                     invoicesByMonth[key].total += d.installmentAmount;
                     invoicesByMonth[key].count += 1;
@@ -181,7 +185,11 @@ export default function CardsView() {
                     locale: ptBR,
                   });
                   if (!invoicesByMonth[key]) {
-                    invoicesByMonth[key] = { month: monthLabel, total: 0, count: 0 };
+                    invoicesByMonth[key] = {
+                      month: monthLabel,
+                      total: 0,
+                      count: 0,
+                    };
                   }
                   invoicesByMonth[key].total += t.amount;
                   invoicesByMonth[key].count += 1;
