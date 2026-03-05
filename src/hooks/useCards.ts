@@ -14,7 +14,6 @@ import {
     orderBy,
     onSnapshot,
     writeBatch,
-    where,
 } from 'firebase/firestore';
 import { useEffect } from 'react';
 
