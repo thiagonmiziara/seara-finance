@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCards } from '@/hooks/useCards';
 import { useFinance } from '@/hooks/useFinance';
+import { useDebts } from '@/hooks/useDebts';
 import { AddCardModal } from './AddCardModal';
 import { EditCardLimitModal } from './EditCardLimitModal';
 import { DeleteCardDialog } from './DeleteCardDialog';
@@ -13,6 +14,8 @@ import {
   ChevronDown,
   ChevronUp,
   CalendarRange,
+  Check,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
@@ -30,12 +33,20 @@ export default function CardsView() {
     isLoading,
   } = useCards();
   const { transactions } = useFinance();
+  const { debts, incrementInstallment } = useDebts();
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [expandedDebts, setExpandedDebts] = useState<Record<string, boolean>>(
     {},
   );
 
   const toggleForecast = (cardId: string) => {
     setExpandedCards((prev) => ({ ...prev, [cardId]: !prev[cardId] }));
+  };
+
+  const toggleDebts = (cardId: string) => {
+    setExpandedDebts((prev) => ({ ...prev, [cardId]: !prev[cardId] }));
   };
 
   const formatCurrency = (value: number) =>
@@ -82,10 +93,27 @@ export default function CardsView() {
             const cardTransactions = transactions.filter(
               (t) => t.cardId === card.id && t.status === 'a_pagar',
             );
-            const usedLimit = cardTransactions.reduce(
+
+            // Calcular dívidas pendentes deste cartão
+            const cardDebts = debts
+              .filter((d) => d.cardId === card.id && d.status !== 'pago')
+              .filter((d) => {
+                // Remover dívidas completamente quitadas (todas as parcelas pagas)
+                const remainingInstallments =
+                  d.installments - (d.paidInstallments || 0);
+                return remainingInstallments > 0;
+              });
+            const cardDebtRemaining = cardDebts.reduce((acc, d) => {
+              const paidAmount =
+                (d.paidInstallments || 0) * d.installmentAmount;
+              return acc + (d.totalAmount - paidAmount);
+            }, 0);
+
+            const transactionUsed = cardTransactions.reduce(
               (acc, t) => acc + t.amount,
               0,
             );
+            const usedLimit = transactionUsed + cardDebtRemaining;
             const availableLimit = Math.max(0, card.limit - usedLimit);
             const usagePercentage = Math.min(
               100,
@@ -212,51 +240,188 @@ export default function CardsView() {
                   </div>
 
                   {/* Invoice Forecast Section */}
-                  {sortedInvoices.length > 0 && (
-                    <div className='pt-2 border-t border-border/50'>
-                      <button
-                        onClick={() => toggleForecast(card.id)}
-                        className='flex items-center justify-between w-full text-xs text-muted-foreground hover:text-foreground transition-colors'
-                      >
-                        <span className='flex items-center gap-1.5 font-medium'>
-                          <CalendarRange className='h-3.5 w-3.5' />
-                          Previsão de Fatura ({sortedInvoices.length}{' '}
-                          {sortedInvoices.length === 1 ? 'mês' : 'meses'})
-                        </span>
-                        {isExpanded ? (
-                          <ChevronUp className='h-4 w-4' />
-                        ) : (
-                          <ChevronDown className='h-4 w-4' />
-                        )}
-                      </button>
-
-                      {isExpanded && (
-                        <div className='mt-2 space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200'>
-                          {sortedInvoices.map((invoice) => (
-                            <div
-                              key={invoice.month}
-                              className='flex items-center justify-between text-xs bg-muted/40 rounded-md px-3 py-2'
-                            >
-                              <span className='capitalize text-muted-foreground'>
-                                {invoice.month}
-                              </span>
-                              <div className='flex items-center gap-2'>
-                                <span className='text-muted-foreground text-[10px]'>
-                                  {invoice.count}{' '}
-                                  {invoice.count === 1 ? 'parcela' : 'parcelas'}
+                  {(sortedInvoices.length > 0 || cardDebts.length > 0) && (
+                    <div className='pt-2 border-t border-border/50 space-y-3'>
+                      {/* Parcelas a Pagar Section */}
+                      {cardDebts.length > 0 &&
+                        (() => {
+                          const isDebtsExpanded =
+                            expandedDebts[card.id] ?? false;
+                          return (
+                            <div>
+                              <button
+                                onClick={() => toggleDebts(card.id)}
+                                className='flex items-center justify-between w-full text-xs text-muted-foreground hover:text-foreground transition-colors mb-2'
+                              >
+                                <span className='flex items-center gap-1.5 font-medium'>
+                                  <AlertCircle className='h-3.5 w-3.5' />
+                                  Parcelas a Pagar ({cardDebts.length})
                                 </span>
-                                <span className='font-semibold text-foreground'>
-                                  {formatCurrency(invoice.total)}
+                                {isDebtsExpanded ? (
+                                  <ChevronUp className='h-4 w-4' />
+                                ) : (
+                                  <ChevronDown className='h-4 w-4' />
+                                )}
+                              </button>
+                              {isDebtsExpanded && (
+                                <div className='space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200'>
+                                  {cardDebts.map((debt) => {
+                                    const paidCount =
+                                      debt.paidInstallments || 0;
+                                    const remainingInstallments =
+                                      debt.installments - paidCount;
+                                    return (
+                                      <div
+                                        key={debt.id}
+                                        className='text-xs bg-muted/40 rounded-md px-3 py-2 space-y-1.5'
+                                      >
+                                        {/* Header da dívida */}
+                                        <div className='flex items-center justify-between'>
+                                          <p className='text-muted-foreground capitalize font-medium'>
+                                            {debt.description}
+                                          </p>
+                                          <span className='text-[10px] text-muted-foreground/70'>
+                                            {paidCount}/{debt.installments}{' '}
+                                            pagas
+                                          </span>
+                                        </div>
+                                        {/* Lista de parcelas individuais */}
+                                        <div className='space-y-1'>
+                                          {Array.from({
+                                            length: debt.installments,
+                                          }).map((_, i) => {
+                                            const isPaid = i < paidCount;
+                                            const isNext = i === paidCount;
+                                            return (
+                                              <div
+                                                key={i}
+                                                className={`flex items-center justify-between rounded px-2 py-1 transition-all duration-300 ${
+                                                  isPaid
+                                                    ? 'opacity-60'
+                                                    : isNext
+                                                      ? 'bg-emerald-500/10'
+                                                      : ''
+                                                }`}
+                                              >
+                                                <div className='flex items-center gap-1.5 flex-1'>
+                                                  {isPaid && (
+                                                    <div className='h-px w-3 bg-emerald-500 rounded' />
+                                                  )}
+                                                  <span
+                                                    className={`transition-all duration-300 ${
+                                                      isPaid
+                                                        ? 'line-through text-emerald-500/70'
+                                                        : 'text-foreground/80'
+                                                    }`}
+                                                  >
+                                                    Parcela {i + 1}
+                                                  </span>
+                                                </div>
+                                                <div className='flex items-center gap-2'>
+                                                  <span
+                                                    className={`font-semibold transition-all duration-300 ${
+                                                      isPaid
+                                                        ? 'line-through text-emerald-500/70'
+                                                        : 'text-foreground'
+                                                    }`}
+                                                  >
+                                                    {formatCurrency(
+                                                      debt.installmentAmount,
+                                                    )}
+                                                  </span>
+                                                  {isPaid ? (
+                                                    <Check className='h-3.5 w-3.5 text-emerald-500' />
+                                                  ) : isNext ? (
+                                                    <button
+                                                      onClick={() =>
+                                                        incrementInstallment(
+                                                          debt,
+                                                        )
+                                                      }
+                                                      className='text-emerald-500 hover:text-emerald-600 hover:scale-110 transition-all'
+                                                      title='Pagar esta parcela'
+                                                    >
+                                                      <Check className='h-3.5 w-3.5' />
+                                                    </button>
+                                                  ) : (
+                                                    <AlertCircle className='h-3.5 w-3.5 text-muted-foreground/40' />
+                                                  )}
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                        {/* Valor restante */}
+                                        <div className='flex justify-between pt-1 border-t border-border/30'>
+                                          <span className='text-muted-foreground/70'>
+                                            Restante
+                                          </span>
+                                          <span className='font-semibold text-red-500'>
+                                            {formatCurrency(
+                                              remainingInstallments *
+                                                debt.installmentAmount,
+                                            )}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+
+                      {/* Forecast Section */}
+                      {sortedInvoices.length > 0 && (
+                        <div>
+                          <button
+                            onClick={() => toggleForecast(card.id)}
+                            className='flex items-center justify-between w-full text-xs text-muted-foreground hover:text-foreground transition-colors'
+                          >
+                            <span className='flex items-center gap-1.5 font-medium'>
+                              <CalendarRange className='h-3.5 w-3.5' />
+                              Previsão de Fatura ({sortedInvoices.length}{' '}
+                              {sortedInvoices.length === 1 ? 'mês' : 'meses'})
+                            </span>
+                            {isExpanded ? (
+                              <ChevronUp className='h-4 w-4' />
+                            ) : (
+                              <ChevronDown className='h-4 w-4' />
+                            )}
+                          </button>
+
+                          {isExpanded && (
+                            <div className='mt-2 space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200'>
+                              {sortedInvoices.map((invoice) => (
+                                <div
+                                  key={invoice.month}
+                                  className='flex items-center justify-between text-xs bg-muted/40 rounded-md px-3 py-2'
+                                >
+                                  <span className='capitalize text-muted-foreground'>
+                                    {invoice.month}
+                                  </span>
+                                  <div className='flex items-center gap-2'>
+                                    <span className='text-muted-foreground text-[10px]'>
+                                      {invoice.count}{' '}
+                                      {invoice.count === 1
+                                        ? 'parcela'
+                                        : 'parcelas'}
+                                    </span>
+                                    <span className='font-semibold text-foreground'>
+                                      {formatCurrency(invoice.total)}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                              <div className='flex justify-between text-xs font-semibold pt-1.5 px-3'>
+                                <span>Total pendente:</span>
+                                <span className='text-red-500'>
+                                  {formatCurrency(transactionUsed)}
                                 </span>
                               </div>
                             </div>
-                          ))}
-                          <div className='flex justify-between text-xs font-semibold pt-1.5 px-3'>
-                            <span>Total pendente:</span>
-                            <span className='text-red-500'>
-                              {formatCurrency(usedLimit)}
-                            </span>
-                          </div>
+                          )}
                         </div>
                       )}
                     </div>
