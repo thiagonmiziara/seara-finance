@@ -57,6 +57,7 @@ export function AddTransactionModal({
     formState: { errors, isSubmitted },
   } = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionFormSchema),
+    mode: 'onChange',
     defaultValues: {
       type: 'expense',
       amount: 0,
@@ -468,12 +469,19 @@ export function AddTransactionModal({
                 Data
               </Label>
               <div className='col-span-3'>
-                <Input
-                  id='date'
-                  type='date'
-                  className='col-span-3'
-                  placeholder='Selecione uma data'
-                  {...register('date')}
+                <Controller
+                  name='date'
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id='date'
+                      type='date'
+                      className='col-span-3'
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      onBlur={field.onBlur}
+                    />
+                  )}
                 />
                 {errors.date && (
                   <span className='text-red-500 text-xs'>

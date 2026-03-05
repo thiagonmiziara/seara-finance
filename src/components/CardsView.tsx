@@ -113,7 +113,11 @@ export default function CardsView() {
               (acc, t) => acc + t.amount,
               0,
             );
-            const usedLimit = transactionUsed + cardDebtRemaining;
+            // Usar apenas dívidas para calcular o limite consumido (evita dupla contagem
+            // com transações parceladas que podem já estar representadas como dívidas)
+            const usedLimit = cardDebts.length > 0
+              ? cardDebtRemaining
+              : transactionUsed;
             const availableLimit = Math.max(0, card.limit - usedLimit);
             const usagePercentage = Math.min(
               100,

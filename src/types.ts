@@ -2,12 +2,34 @@ import { z } from 'zod';
 
 export const transactionSchema = z.object({
   id: z.string().uuid(),
-  description: z.string().min(1, 'Descrição é obrigatória'),
-  amount: z.number().min(0.01, 'Valor deve ser maior que zero'),
-  category: z.string().min(1, 'Categoria é obrigatória'),
-  type: z.enum(['income', 'expense']),
-  status: z.enum(['pago', 'a_pagar', 'recebido', 'a_receber']),
-  date: z.string(), // Transaction date (ISO string)
+  description: z
+    .string({
+      required_error: 'Descrição é obrigatória',
+      invalid_type_error: 'Descrição é obrigatória',
+    })
+    .min(1, 'Descrição é obrigatória'),
+  amount: z
+    .number({
+      required_error: 'Valor é obrigatório',
+      invalid_type_error: 'Informe um valor válido',
+    })
+    .min(0.01, 'Valor deve ser maior que zero'),
+  category: z
+    .string({
+      required_error: 'Categoria é obrigatória',
+      invalid_type_error: 'Categoria é obrigatória',
+    })
+    .min(1, 'Categoria é obrigatória'),
+  type: z.enum(['income', 'expense'], { required_error: 'Tipo é obrigatório' }),
+  status: z.enum(['pago', 'a_pagar', 'recebido', 'a_receber'], {
+    required_error: 'Status é obrigatório',
+  }),
+  date: z
+    .string({
+      required_error: 'Data é obrigatória',
+      invalid_type_error: 'Data é obrigatória',
+    })
+    .min(1, 'Data é obrigatória'), // Transaction date (ISO string)
   createdAt: z.string(), // Registration date (ISO string)
   cardId: z.string().optional(),
   installments: z
@@ -25,6 +47,10 @@ export const transactionFormSchema = transactionSchema
   .extend({
     cardId: z.string().optional(),
     installmentsTotal: z.number().min(1).max(48).optional(),
+    date: z
+      .string()
+      .min(1, 'Data é obrigatória')
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida'),
   })
   .refine((data) => data.category !== 'criar_categoria', {
     message:
