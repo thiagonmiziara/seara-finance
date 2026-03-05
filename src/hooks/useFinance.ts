@@ -153,6 +153,7 @@ export function useFinance(filter?: DateRange) {
           status: 'a_pagar',
           dueDate: firstDueDate.toISOString().split('T')[0],
           createdAt: new Date().toISOString(),
+          cardId: cardId,
         });
 
         await batch.commit();

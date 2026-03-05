@@ -10,10 +10,12 @@ export const transactionSchema = z.object({
   date: z.string(), // Transaction date (ISO string)
   createdAt: z.string(), // Registration date (ISO string)
   cardId: z.string().optional(),
-  installments: z.object({
-    current: z.number(),
-    total: z.number()
-  }).optional(),
+  installments: z
+    .object({
+      current: z.number(),
+      total: z.number(),
+    })
+    .optional(),
 });
 
 export type Transaction = z.infer<typeof transactionSchema>;
@@ -48,17 +50,31 @@ export const debtSchema = z.object({
   description: z.string().min(1, 'Descrição é obrigatória'),
   totalAmount: z.number().min(0.01, 'Valor deve ser maior que zero'),
   installments: z.number().min(1, 'Deve ter ao menos 1 parcela'),
-  installmentAmount: z.number().min(0, 'Valor da parcela não pode ser negativo'),
+  installmentAmount: z
+    .number()
+    .min(0, 'Valor da parcela não pode ser negativo'),
   paidInstallments: z.number().int().nonnegative().optional(),
   status: z.enum(['a_pagar', 'pago']),
   dueDate: z.string(), // ISO string
   createdAt: z.string(), // ISO string
+  cardId: z.string().optional(),
 });
 
 export type Debt = z.infer<typeof debtSchema>;
 
 export const debtFormSchema = debtSchema.omit({ id: true, createdAt: true });
 export type DebtFormValues = z.infer<typeof debtFormSchema>;
+
+export const CARD_BRANDS = [
+  'visa',
+  'mastercard',
+  'elo',
+  'amex',
+  'hipercard',
+  'diners',
+  'discover',
+] as const;
+export type CardBrand = (typeof CARD_BRANDS)[number];
 
 export const creditCardSchema = z.object({
   id: z.string().uuid(),
@@ -67,10 +83,19 @@ export const creditCardSchema = z.object({
   closingDay: z.number().min(1).max(31),
   dueDay: z.number().min(1).max(31),
   color: z.string(),
+  brand: z.enum(CARD_BRANDS).optional(),
+  lastFour: z
+    .string()
+    .length(4)
+    .regex(/^\d{4}$/)
+    .optional(),
   createdAt: z.string(), // ISO string
 });
 
 export type CreditCard = z.infer<typeof creditCardSchema>;
 
-export const creditCardFormSchema = creditCardSchema.omit({ id: true, createdAt: true });
+export const creditCardFormSchema = creditCardSchema.omit({
+  id: true,
+  createdAt: true,
+});
 export type CreditCardFormValues = z.infer<typeof creditCardFormSchema>;

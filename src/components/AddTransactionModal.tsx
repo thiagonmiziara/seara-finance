@@ -23,14 +23,19 @@ import { useCategories } from '@/hooks/useCategories';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { Trash, CreditCard } from 'lucide-react';
+import { Trash } from 'lucide-react';
+import { CardBrandIcon } from './CardBrandIcon';
 import { showToast } from '@/lib/toast';
 import { useAccount } from '@/hooks/useAccount';
 import { useCards } from '@/hooks/useCards';
 
 interface AddTransactionModalProps {
   onAddTransaction: (data: TransactionFormValues) => Promise<any>;
-  onAddTransfer?: (data: { sourceData: TransactionFormValues, destinationData: TransactionFormValues, destinationAccountType: string }) => Promise<any>;
+  onAddTransfer?: (data: {
+    sourceData: TransactionFormValues;
+    destinationData: TransactionFormValues;
+    destinationAccountType: string;
+  }) => Promise<any>;
   isAdding?: boolean;
   className?: string;
 }
@@ -86,7 +91,9 @@ export function AddTransactionModal({
 
   const formType = watch('type');
   const selectedCardId = watch('cardId');
-  const [transferType, setTransferType] = useState<'income' | 'expense'>('income');
+  const [transferType, setTransferType] = useState<'income' | 'expense'>(
+    'income',
+  );
 
   useEffect(() => {
     setTransferType(formType === 'expense' ? 'income' : 'expense');
@@ -100,12 +107,13 @@ export function AddTransactionModal({
           ...data,
           type: transferType,
         };
-        const destAccount = accountType === 'personal' ? 'business' : 'personal';
+        const destAccount =
+          accountType === 'personal' ? 'business' : 'personal';
 
         await onAddTransfer({
           sourceData: data,
           destinationData,
-          destinationAccountType: destAccount
+          destinationAccountType: destAccount,
         });
       } else {
         await onAddTransaction(data);
@@ -201,27 +209,27 @@ export function AddTransactionModal({
                       <SelectContent>
                         {dynamicCategories.length > 0
                           ? dynamicCategories.map((c) => (
-                            <SelectItem key={c.value} value={c.value}>
-                              <span className='inline-flex items-center gap-2'>
-                                <span
-                                  className='h-2 w-2 rounded-full'
-                                  style={{ backgroundColor: c.color }}
-                                />
-                                <span>{c.label}</span>
-                              </span>
-                            </SelectItem>
-                          ))
+                              <SelectItem key={c.value} value={c.value}>
+                                <span className='inline-flex items-center gap-2'>
+                                  <span
+                                    className='h-2 w-2 rounded-full'
+                                    style={{ backgroundColor: c.color }}
+                                  />
+                                  <span>{c.label}</span>
+                                </span>
+                              </SelectItem>
+                            ))
                           : STATIC_CATEGORIES.map((c) => (
-                            <SelectItem key={c.value} value={c.value}>
-                              <span className='inline-flex items-center gap-2'>
-                                <span
-                                  className='h-2 w-2 rounded-full'
-                                  style={{ backgroundColor: c.color }}
-                                />
-                                <span>{c.label}</span>
-                              </span>
-                            </SelectItem>
-                          ))}
+                              <SelectItem key={c.value} value={c.value}>
+                                <span className='inline-flex items-center gap-2'>
+                                  <span
+                                    className='h-2 w-2 rounded-full'
+                                    style={{ backgroundColor: c.color }}
+                                  />
+                                  <span>{c.label}</span>
+                                </span>
+                              </SelectItem>
+                            ))}
 
                         <SelectItem
                           key='criar_categoria'
@@ -240,58 +248,58 @@ export function AddTransactionModal({
                 {dynamicCategories.some(
                   (c) => !STATIC_CATEGORIES.find((s) => s.value === c.value),
                 ) && (
-                    <div className='mt-2'>
-                      <button
-                        type='button'
-                        className='text-sm text-muted-foreground underline'
-                        onClick={() => setShowManage((s) => !s)}
-                      >
-                        {showManage
-                          ? 'Fechar gerenciamento'
-                          : 'Gerenciar categorias'}
-                      </button>
+                  <div className='mt-2'>
+                    <button
+                      type='button'
+                      className='text-sm text-muted-foreground underline'
+                      onClick={() => setShowManage((s) => !s)}
+                    >
+                      {showManage
+                        ? 'Fechar gerenciamento'
+                        : 'Gerenciar categorias'}
+                    </button>
 
-                      {showManage && (
-                        <div className='mt-2 space-y-2'>
-                          {dynamicCategories
-                            .filter(
-                              (c) =>
-                                !STATIC_CATEGORIES.find(
-                                  (s) => s.value === c.value,
-                                ),
-                            )
-                            .map((c) => (
-                              <div
-                                key={c.value}
-                                className='flex items-center gap-2 bg-card p-2 rounded-md border border-border/40'
+                    {showManage && (
+                      <div className='mt-2 space-y-2'>
+                        {dynamicCategories
+                          .filter(
+                            (c) =>
+                              !STATIC_CATEGORIES.find(
+                                (s) => s.value === c.value,
+                              ),
+                          )
+                          .map((c) => (
+                            <div
+                              key={c.value}
+                              className='flex items-center gap-2 bg-card p-2 rounded-md border border-border/40'
+                            >
+                              <span
+                                className='inline-block h-3 w-3 rounded-full'
+                                style={{ backgroundColor: c.color }}
+                              />
+                              <span className='flex-1 text-sm'>{c.label}</span>
+                              <button
+                                type='button'
+                                className='p-1 rounded hover:bg-muted/20'
+                                onClick={() => {
+                                  // open confirmation modal
+                                  setConfirmCategory({
+                                    value: c.value,
+                                    label: c.label,
+                                    color: c.color,
+                                  });
+                                  setConfirmOpen(true);
+                                }}
+                                aria-label={`Remover ${c.label}`}
                               >
-                                <span
-                                  className='inline-block h-3 w-3 rounded-full'
-                                  style={{ backgroundColor: c.color }}
-                                />
-                                <span className='flex-1 text-sm'>{c.label}</span>
-                                <button
-                                  type='button'
-                                  className='p-1 rounded hover:bg-muted/20'
-                                  onClick={() => {
-                                    // open confirmation modal
-                                    setConfirmCategory({
-                                      value: c.value,
-                                      label: c.label,
-                                      color: c.color,
-                                    });
-                                    setConfirmOpen(true);
-                                  }}
-                                  aria-label={`Remover ${c.label}`}
-                                >
-                                  <Trash className='h-4 w-4 text-red-400' />
-                                </button>
-                              </div>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                                <Trash className='h-4 w-4 text-red-400' />
+                              </button>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {errors.category && isSubmitted && (
                   <span className='text-red-500 text-xs'>
@@ -487,7 +495,9 @@ export function AddTransactionModal({
                       control={control}
                       render={({ field }) => (
                         <Select
-                          onValueChange={(v) => field.onChange(v === 'account' ? undefined : v)}
+                          onValueChange={(v) =>
+                            field.onChange(v === 'account' ? undefined : v)
+                          }
                           value={field.value || 'account'}
                         >
                           <SelectTrigger>
@@ -495,12 +505,18 @@ export function AddTransactionModal({
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value='account'>
-                              <span className='font-medium'>Conta Corrente</span>
+                              <span className='font-medium'>
+                                Conta Corrente
+                              </span>
                             </SelectItem>
                             {cards.map((card) => (
                               <SelectItem key={card.id!} value={card.id!}>
                                 <span className='inline-flex items-center gap-2'>
-                                  <CreditCard className='h-4 w-4' style={{ color: card.color }} />
+                                  <CardBrandIcon
+                                    brand={card.brand}
+                                    className='h-4 w-auto'
+                                    lucideSize={14}
+                                  />
                                   <span>{card.name}</span>
                                 </span>
                               </SelectItem>
@@ -529,12 +545,14 @@ export function AddTransactionModal({
                             <SelectTrigger>
                               <SelectValue placeholder='1x' />
                             </SelectTrigger>
-                            <SelectContent className="max-h-[200px]">
-                              {Array.from({ length: 48 }, (_, i) => i + 1).map((n) => (
-                                <SelectItem key={n} value={String(n)}>
-                                  {n}x {n > 1 ? 'vezes' : 'vez (À vista)'}
-                                </SelectItem>
-                              ))}
+                            <SelectContent className='max-h-[200px]'>
+                              {Array.from({ length: 48 }, (_, i) => i + 1).map(
+                                (n) => (
+                                  <SelectItem key={n} value={String(n)}>
+                                    {n}x {n > 1 ? 'vezes' : 'vez (À vista)'}
+                                  </SelectItem>
+                                ),
+                              )}
                             </SelectContent>
                           </Select>
                         )}
@@ -555,28 +573,35 @@ export function AddTransactionModal({
                     checked={isTransfer}
                     onChange={(e) => setIsTransfer(e.target.checked)}
                   />
-                  <Label htmlFor="is-transfer" className="cursor-pointer text-sm font-medium leading-none">
+                  <Label
+                    htmlFor='is-transfer'
+                    className='cursor-pointer text-sm font-medium leading-none'
+                  >
                     {`Lançar também na conta ${accountType === 'personal' ? 'Empresarial (PJ)' : 'Pessoal'}`}
                   </Label>
                 </div>
 
                 {isTransfer && (
                   <div className='pl-7 flex items-center space-x-3 animate-in fade-in duration-200'>
-                    <Label className="text-sm text-muted-foreground whitespace-nowrap">Como:</Label>
-                    <Select value={transferType} onValueChange={(v: any) => setTransferType(v)}>
-                      <SelectTrigger className="h-8 w-[130px] bg-background">
+                    <Label className='text-sm text-muted-foreground whitespace-nowrap'>
+                      Como:
+                    </Label>
+                    <Select
+                      value={transferType}
+                      onValueChange={(v: any) => setTransferType(v)}
+                    >
+                      <SelectTrigger className='h-8 w-[130px] bg-background'>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="income">Entrada</SelectItem>
-                        <SelectItem value="expense">Saída</SelectItem>
+                        <SelectItem value='income'>Entrada</SelectItem>
+                        <SelectItem value='expense'>Saída</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 )}
               </div>
             )}
-
           </div>
 
           {/* Confirmation dialog for deleting a category */}
@@ -636,7 +661,7 @@ export function AddTransactionModal({
                             const sel = watch('category');
                             if (sel === STATIC_CATEGORIES[0].value)
                               setValue('category', recreated.value);
-                          } catch (e) { }
+                          } catch (e) {}
                         },
                       });
                     } catch (e) {
