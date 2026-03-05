@@ -37,7 +37,9 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   useMigration(); // Run migration logic in the background
   const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'overview' | 'debts' | 'cards'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'debts' | 'cards'>(
+    'overview',
+  );
   const [period, setPeriod] = useState<'current' | 'previous' | 'custom'>(
     'current',
   );
@@ -82,6 +84,7 @@ export default function Dashboard() {
   const {
     transactions,
     dashboardTransactions,
+    allTransactions,
     addTransaction,
     addTransfer,
     removeTransaction,
@@ -93,7 +96,9 @@ export default function Dashboard() {
   } = useFinance(dateRange);
 
   // month comparison selectors (any two months)
-  const [monthA, setMonthA] = useState(format(subMonths(new Date(), 1), 'yyyy-MM'));
+  const [monthA, setMonthA] = useState(
+    format(subMonths(new Date(), 1), 'yyyy-MM'),
+  );
   const [monthB, setMonthB] = useState(format(new Date(), 'yyyy-MM'));
 
   return (
@@ -102,7 +107,11 @@ export default function Dashboard() {
         <div className='container mx-auto flex h-16 items-center justify-between px-4'>
           <div className='flex items-center gap-2'>
             <div className='flex h-10 w-10 items-center justify-center rounded-lg bg-black shadow-sm overflow-hidden'>
-              <img src="/icone.png" alt="Logo" className="h-full w-full object-contain" />
+              <img
+                src='/icone.png'
+                alt='Logo'
+                className='h-full w-full object-contain'
+              />
             </div>
             <span className='text-xl font-bold tracking-tight'>
               Seara Finance
@@ -128,16 +137,25 @@ export default function Dashboard() {
                 <div className='h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-medium'>
                   {user?.name
                     ? user.name
-                      .split(' ')
-                      .map((n) => n[0])
-                      .slice(0, 2)
-                      .join('')
+                        .split(' ')
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join('')
                     : 'U'}
                 </div>
               )}
             </div>
-            <Button variant='ghost' size='icon' onClick={toggleTheme} title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}>
-              {theme === 'dark' ? <Sun className='h-5 w-5' /> : <Moon className='h-5 w-5' />}
+            <Button
+              variant='ghost'
+              size='icon'
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+            >
+              {theme === 'dark' ? (
+                <Sun className='h-5 w-5' />
+              ) : (
+                <Moon className='h-5 w-5' />
+              )}
             </Button>
             <Button variant='ghost' size='icon' onClick={logout}>
               <LogOut className='h-5 w-5' />
@@ -152,70 +170,76 @@ export default function Dashboard() {
       </div>
 
       {/* Navigation Tabs */}
-      < div className='border-b bg-card w-full hidden md:block' >
+      <div className='border-b bg-card w-full hidden md:block'>
         <div className='container mx-auto px-4 flex gap-6'>
           <button
             onClick={() => setActiveTab('overview')}
-            className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'overview'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-              }`}
+            className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'overview'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+            }`}
           >
             Transações
           </button>
           <button
             onClick={() => setActiveTab('debts')}
-            className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'debts'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-              }`}
+            className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'debts'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+            }`}
           >
             Dívidas
           </button>
           <button
             onClick={() => setActiveTab('cards')}
-            className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'cards'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-              }`}
+            className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'cards'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+            }`}
           >
             Cartões
           </button>
         </div>
-      </div >
+      </div>
 
       {/* Mobile Tabs */}
-      < div className='bg-card border-b p-2 md:hidden flex justify-center sticky top-0 z-10' >
+      <div className='bg-card border-b p-2 md:hidden flex justify-center sticky top-0 z-10'>
         <div className='bg-muted/50 p-1 rounded-lg inline-flex max-w-sm w-full'>
           <button
             onClick={() => setActiveTab('overview')}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'overview'
-              ? 'bg-background shadow-sm text-foreground'
-              : 'text-muted-foreground hover:text-foreground'
-              }`}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+              activeTab === 'overview'
+                ? 'bg-background shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
           >
             Transações
           </button>
           <button
             onClick={() => setActiveTab('debts')}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'debts'
-              ? 'bg-background shadow-sm text-foreground'
-              : 'text-muted-foreground hover:text-foreground'
-              }`}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+              activeTab === 'debts'
+                ? 'bg-background shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
           >
             Dívidas
           </button>
           <button
             onClick={() => setActiveTab('cards')}
-            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'cards'
-              ? 'bg-background shadow-sm text-foreground'
-              : 'text-muted-foreground hover:text-foreground'
-              }`}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+              activeTab === 'cards'
+                ? 'bg-background shadow-sm text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
           >
             Cartões
           </button>
         </div>
-      </div >
+      </div>
 
       <main className='container mx-auto flex-1 space-y-8 p-4 py-8 md:p-8'>
         {activeTab === 'overview' ? (
@@ -226,7 +250,10 @@ export default function Dashboard() {
                   <label className='text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1'>
                     Período
                   </label>
-                  <Select value={period} onValueChange={(v: any) => setPeriod(v)}>
+                  <Select
+                    value={period}
+                    onValueChange={(v: any) => setPeriod(v)}
+                  >
                     <SelectTrigger className='w-full bg-background/50 border-border/50 focus:ring-primary/20'>
                       <SelectValue placeholder='Selecione o período' />
                     </SelectTrigger>
@@ -286,7 +313,10 @@ export default function Dashboard() {
                         onClick={() => {
                           setPeriod('current');
                           setCustomRange({
-                            from: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+                            from: format(
+                              startOfMonth(new Date()),
+                              'yyyy-MM-dd',
+                            ),
                             to: format(new Date(), 'yyyy-MM-dd'),
                           });
                         }}
@@ -353,7 +383,9 @@ export default function Dashboard() {
             <div className='mt-4 bg-card p-4 rounded-xl border border-border/50'>
               <div className='flex items-center gap-3 mb-4 flex-col sm:flex-row'>
                 <div className='flex items-center gap-2'>
-                  <label className='text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1'>Mês A</label>
+                  <label className='text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1'>
+                    Mês A
+                  </label>
                   <Input
                     type='month'
                     value={monthA}
@@ -362,7 +394,9 @@ export default function Dashboard() {
                   />
                 </div>
                 <div className='flex items-center gap-2'>
-                  <label className='text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1'>Mês B</label>
+                  <label className='text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1'>
+                    Mês B
+                  </label>
                   <Input
                     type='month'
                     value={monthB}
@@ -374,7 +408,7 @@ export default function Dashboard() {
 
               <div>
                 <MonthComparisonChart
-                  transactions={dashboardTransactions}
+                  transactions={allTransactions}
                   monthA={new Date(monthA + '-01T00:00:00')}
                   monthB={new Date(monthB + '-01T00:00:00')}
                 />
@@ -382,7 +416,9 @@ export default function Dashboard() {
             </div>
 
             <div className='space-y-4'>
-              <h3 className='text-xl font-semibold tracking-tight'>Transações</h3>
+              <h3 className='text-xl font-semibold tracking-tight'>
+                Transações
+              </h3>
               {isInitialLoading ? (
                 <div className='space-y-2'>
                   <Skeleton className='h-[50px] w-full' />
@@ -403,6 +439,6 @@ export default function Dashboard() {
           <CardsView />
         )}
       </main>
-    </div >
+    </div>
   );
 }

@@ -100,10 +100,22 @@ export function useFinance(filter?: DateRange) {
 
       if (data.type === 'expense' && cardId) {
         // Fetch card details
-        const cardRef = doc(db, 'users', user.id, 'accounts', accountType, 'cards', cardId);
+        const cardRef = doc(
+          db,
+          'users',
+          user.id,
+          'accounts',
+          accountType,
+          'cards',
+          cardId,
+        );
         const cardSnap = await getDoc(cardRef);
         if (!cardSnap.exists()) throw new Error('Card not found');
-        const card = cardSnap.data() as { closingDay: number; dueDay: number; name: string };
+        const card = cardSnap.data() as {
+          closingDay: number;
+          dueDay: number;
+          name: string;
+        };
 
         const purchaseDate = new Date(data.date + 'T00:00:00');
         const batch = writeBatch(db);
@@ -116,7 +128,11 @@ export function useFinance(filter?: DateRange) {
         if (purchaseDate.getDate() >= card.closingDay) {
           firstInvoiceMonth += 1;
         }
-        const firstDueDate = new Date(firstInvoiceYear, firstInvoiceMonth, card.dueDay);
+        const firstDueDate = new Date(
+          firstInvoiceYear,
+          firstInvoiceMonth,
+          card.dueDay,
+        );
 
         // Create installment transactions
         for (let i = 1; i <= totalInst; i++) {
@@ -126,11 +142,20 @@ export function useFinance(filter?: DateRange) {
           if (purchaseDate.getDate() >= card.closingDay) {
             invoiceMonth += 1;
           }
-          invoiceMonth += (i - 1);
+          invoiceMonth += i - 1;
 
           const dueDate = new Date(invoiceYear, invoiceMonth, card.dueDay);
 
-          const installRef = doc(collection(db, 'users', user.id, 'accounts', accountType, 'transactions'));
+          const installRef = doc(
+            collection(
+              db,
+              'users',
+              user.id,
+              'accounts',
+              accountType,
+              'transactions',
+            ),
+          );
           batch.set(installRef, {
             ...restData,
             amount: baseAmount,
@@ -138,12 +163,14 @@ export function useFinance(filter?: DateRange) {
             installments: { current: i, total: totalInst },
             date: dueDate.toISOString().split('T')[0],
             status: 'a_pagar',
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
           });
         }
 
         // Also create a Debt entry for consolidated view in Dívidas tab
-        const debtRef = doc(collection(db, 'users', user.id, 'accounts', accountType, 'debts'));
+        const debtRef = doc(
+          collection(db, 'users', user.id, 'accounts', accountType, 'debts'),
+        );
         batch.set(debtRef, {
           description: `${data.description} (${card.name} - ${totalInst}x)`,
           totalAmount: data.amount,
@@ -161,10 +188,20 @@ export function useFinance(filter?: DateRange) {
       }
 
       // Normal transaction
-      return addDoc(collection(db, 'users', user.id, 'accounts', accountType, 'transactions'), {
-        ...restData,
-        createdAt: new Date().toISOString(),
-      });
+      return addDoc(
+        collection(
+          db,
+          'users',
+          user.id,
+          'accounts',
+          accountType,
+          'transactions',
+        ),
+        {
+          ...restData,
+          createdAt: new Date().toISOString(),
+        },
+      );
     },
     onMutate: async (newT) => {
       await queryClient.cancelQueries({ queryKey });
@@ -194,18 +231,44 @@ export function useFinance(filter?: DateRange) {
   });
 
   const addTransferMutation = useMutation({
-    mutationFn: async ({ sourceData, destinationData, destinationAccountType }: { sourceData: TransactionFormValues, destinationData: TransactionFormValues, destinationAccountType: string }) => {
+    mutationFn: async ({
+      sourceData,
+      destinationData,
+      destinationAccountType,
+    }: {
+      sourceData: TransactionFormValues;
+      destinationData: TransactionFormValues;
+      destinationAccountType: string;
+    }) => {
       if (!user) throw new Error('User not authenticated');
 
       const batch = writeBatch(db);
 
-      const sourceRef = doc(collection(db, 'users', user.id, 'accounts', accountType, 'transactions'));
+      const sourceRef = doc(
+        collection(
+          db,
+          'users',
+          user.id,
+          'accounts',
+          accountType,
+          'transactions',
+        ),
+      );
       batch.set(sourceRef, {
         ...sourceData,
         createdAt: new Date().toISOString(),
       });
 
-      const destRef = doc(collection(db, 'users', user.id, 'accounts', destinationAccountType, 'transactions'));
+      const destRef = doc(
+        collection(
+          db,
+          'users',
+          user.id,
+          'accounts',
+          destinationAccountType,
+          'transactions',
+        ),
+      );
       batch.set(destRef, {
         ...destinationData,
         createdAt: new Date().toISOString(),
@@ -222,7 +285,9 @@ export function useFinance(filter?: DateRange) {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       if (!user) throw new Error('User not authenticated');
-      return deleteDoc(doc(db, 'users', user.id, 'accounts', accountType, 'transactions', id));
+      return deleteDoc(
+        doc(db, 'users', user.id, 'accounts', accountType, 'transactions', id),
+      );
     },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey });
@@ -237,6 +302,75 @@ export function useFinance(filter?: DateRange) {
       return { previousTransactions };
     },
     onError: (_err, _id, context) => {
+      if (context?.previousTransactions) {
+        queryClient.setQueryData(queryKey, context.previousTransactions);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
+
+  const payInvoiceMonthMutation = useMutation({
+    mutationFn: async ({
+      cardId,
+      yearMonth,
+    }: {
+      cardId: string;
+      yearMonth: string;
+    }) => {
+      if (!user) throw new Error('User not authenticated');
+
+      const currentTransactions =
+        queryClient.getQueryData<Transaction[]>(queryKey) ?? [];
+
+      const toPayIds = currentTransactions
+        .filter((t) => {
+          if (t.cardId !== cardId || t.status !== 'a_pagar') return false;
+          if (!t.date) return false;
+          const dateStr = t.date.includes('T') ? t.date : `${t.date}T00:00:00`;
+          const date = new Date(dateStr);
+          const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          return key === yearMonth;
+        })
+        .map((t) => t.id);
+
+      if (toPayIds.length === 0) return;
+
+      const batch = writeBatch(db);
+      toPayIds.forEach((id) => {
+        const ref = doc(
+          db,
+          'users',
+          user.id,
+          'accounts',
+          accountType,
+          'transactions',
+          id,
+        );
+        batch.update(ref, { status: 'pago' });
+      });
+      await batch.commit();
+    },
+    onMutate: async ({ cardId, yearMonth }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previousTransactions =
+        queryClient.getQueryData<Transaction[]>(queryKey);
+
+      queryClient.setQueryData(queryKey, (old: Transaction[] = []) =>
+        old.map((t) => {
+          if (t.cardId !== cardId || t.status !== 'a_pagar' || !t.date)
+            return t;
+          const dateStr = t.date.includes('T') ? t.date : `${t.date}T00:00:00`;
+          const date = new Date(dateStr);
+          const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          return key === yearMonth ? { ...t, status: 'pago' as const } : t;
+        }),
+      );
+
+      return { previousTransactions };
+    },
+    onError: (_err, _vars, context) => {
       if (context?.previousTransactions) {
         queryClient.setQueryData(queryKey, context.previousTransactions);
       }
@@ -265,7 +399,15 @@ export function useFinance(filter?: DateRange) {
       try {
         if (isPendingStatus) {
           if (t.cardId) {
-            txDate = t.date ? parseTransactionDate(t.date) : null;
+            // 1st installment: use createdAt so the purchase appears in the month it was made
+            // Other installments: use date (due date) so they appear in their billing month
+            const isFirstInstallment =
+              !t.installments || t.installments.current === 1;
+            if (isFirstInstallment) {
+              txDate = t.createdAt ? parseTransactionDate(t.createdAt) : null;
+            } else {
+              txDate = t.date ? parseTransactionDate(t.date) : null;
+            }
           } else {
             txDate = t.createdAt ? parseTransactionDate(t.createdAt) : null;
           }
@@ -363,14 +505,21 @@ export function useFinance(filter?: DateRange) {
   return {
     transactions: tableTransactions,
     dashboardTransactions: dateFilteredTransactions,
+    allTransactions: transactions,
     addTransaction: addMutation.mutateAsync,
     addTransfer: addTransferMutation.mutateAsync,
     removeTransaction: deleteMutation.mutateAsync,
+    payInvoiceMonth: payInvoiceMonthMutation.mutateAsync,
     exportToCSV,
     summary,
     isAdding: addMutation.isPending || addTransferMutation.isPending,
     isDeleting: deleteMutation.isPending,
+    isPayingInvoice: payInvoiceMonthMutation.isPending,
     isInitialLoading: isPending && user !== null,
-    isLoading: isPending || addMutation.isPending || addTransferMutation.isPending || deleteMutation.isPending,
+    isLoading:
+      isPending ||
+      addMutation.isPending ||
+      addTransferMutation.isPending ||
+      deleteMutation.isPending,
   };
 }

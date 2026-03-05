@@ -16,6 +16,8 @@ import {
   CalendarRange,
   Check,
   AlertCircle,
+  X,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
@@ -32,7 +34,7 @@ export default function CardsView() {
     isUpdating,
     isLoading,
   } = useCards();
-  const { transactions } = useFinance();
+  const { transactions, payInvoiceMonth, isPayingInvoice } = useFinance();
   const { debts, incrementInstallment } = useDebts();
   const [expandedCards, setExpandedCards] = useState<Record<string, boolean>>(
     {},
@@ -40,6 +42,9 @@ export default function CardsView() {
   const [expandedDebts, setExpandedDebts] = useState<Record<string, boolean>>(
     {},
   );
+  const [pendingPayMonth, setPendingPayMonth] = useState<
+    Record<string, string | null>
+  >({});
 
   const toggleForecast = (cardId: string) => {
     setExpandedCards((prev) => ({ ...prev, [cardId]: !prev[cardId] }));
@@ -152,7 +157,7 @@ export default function CardsView() {
 
             const sortedInvoices = Object.entries(invoicesByMonth)
               .sort(([a], [b]) => a.localeCompare(b))
-              .map(([, v]) => v);
+              .map(([k, v]) => ({ ...v, key: k }));
 
             const isExpanded = expandedCards[card.id] ?? false;
 
@@ -396,27 +401,89 @@ export default function CardsView() {
 
                           {isExpanded && (
                             <div className='mt-2 space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200'>
-                              {sortedInvoices.map((invoice) => (
-                                <div
-                                  key={invoice.month}
-                                  className='flex items-center justify-between text-xs bg-muted/40 rounded-md px-3 py-2'
-                                >
-                                  <span className='capitalize text-muted-foreground'>
-                                    {invoice.month}
-                                  </span>
-                                  <div className='flex items-center gap-2'>
-                                    <span className='text-muted-foreground text-[10px]'>
-                                      {invoice.count}{' '}
-                                      {invoice.count === 1
-                                        ? 'parcela'
-                                        : 'parcelas'}
+                              {sortedInvoices.map((invoice) => {
+                                const isPending =
+                                  pendingPayMonth[card.id] === invoice.key;
+                                const isThisLoading =
+                                  isPayingInvoice &&
+                                  pendingPayMonth[card.id] === invoice.key;
+                                return (
+                                  <div
+                                    key={invoice.month}
+                                    className='flex items-center justify-between text-xs bg-muted/40 rounded-md px-3 py-2 gap-2'
+                                  >
+                                    <span className='capitalize text-muted-foreground flex-1'>
+                                      {invoice.month}
                                     </span>
-                                    <span className='font-semibold text-foreground'>
-                                      {formatCurrency(invoice.total)}
-                                    </span>
+                                    <div className='flex items-center gap-2'>
+                                      <span className='text-muted-foreground text-[10px]'>
+                                        {invoice.count}{' '}
+                                        {invoice.count === 1
+                                          ? 'parcela'
+                                          : 'parcelas'}
+                                      </span>
+                                      <span className='font-semibold text-foreground'>
+                                        {formatCurrency(invoice.total)}
+                                      </span>
+                                    </div>
+                                    {isPending ? (
+                                      <div className='flex items-center gap-1 animate-in fade-in duration-150'>
+                                        <span className='text-[10px] text-amber-400 whitespace-nowrap'>
+                                          Confirmar?
+                                        </span>
+                                        <button
+                                          disabled={isThisLoading}
+                                          onClick={() => {
+                                            payInvoiceMonth({
+                                              cardId: card.id,
+                                              yearMonth: invoice.key,
+                                            }).then(() =>
+                                              setPendingPayMonth((prev) => ({
+                                                ...prev,
+                                                [card.id]: null,
+                                              })),
+                                            );
+                                          }}
+                                          className='text-emerald-500 hover:text-emerald-400 disabled:opacity-50 transition-all'
+                                          title='Confirmar pagamento'
+                                        >
+                                          {isThisLoading ? (
+                                            <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                                          ) : (
+                                            <Check className='h-3.5 w-3.5' />
+                                          )}
+                                        </button>
+                                        <button
+                                          disabled={isThisLoading}
+                                          onClick={() =>
+                                            setPendingPayMonth((prev) => ({
+                                              ...prev,
+                                              [card.id]: null,
+                                            }))
+                                          }
+                                          className='text-muted-foreground hover:text-foreground disabled:opacity-50 transition-all'
+                                          title='Cancelar'
+                                        >
+                                          <X className='h-3.5 w-3.5' />
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() =>
+                                          setPendingPayMonth((prev) => ({
+                                            ...prev,
+                                            [card.id]: invoice.key,
+                                          }))
+                                        }
+                                        className='text-muted-foreground/40 hover:text-emerald-500 transition-all'
+                                        title='Marcar fatura como paga'
+                                      >
+                                        <Check className='h-3.5 w-3.5' />
+                                      </button>
+                                    )}
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                               <div className='flex justify-between text-xs font-semibold pt-1.5 px-3'>
                                 <span>Total pendente:</span>
                                 <span className='text-red-500'>
