@@ -313,32 +313,23 @@ export function useFinance(filter?: DateRange) {
 
   const payInvoiceMonthMutation = useMutation({
     mutationFn: async ({
-      cardId,
-      yearMonth,
+      transactionIds,
+      debtUpdates,
     }: {
       cardId: string;
       yearMonth: string;
+      transactionIds: string[];
+      debtUpdates: Array<{
+        id: string;
+        paidInstallments: number;
+        status: string;
+      }>;
     }) => {
       if (!user) throw new Error('User not authenticated');
-
-      const currentTransactions =
-        queryClient.getQueryData<Transaction[]>(queryKey) ?? [];
-
-      const toPayIds = currentTransactions
-        .filter((t) => {
-          if (t.cardId !== cardId || t.status !== 'a_pagar') return false;
-          if (!t.date) return false;
-          const dateStr = t.date.includes('T') ? t.date : `${t.date}T00:00:00`;
-          const date = new Date(dateStr);
-          const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-          return key === yearMonth;
-        })
-        .map((t) => t.id);
-
-      if (toPayIds.length === 0) return;
+      if (transactionIds.length === 0 && debtUpdates.length === 0) return;
 
       const batch = writeBatch(db);
-      toPayIds.forEach((id) => {
+      transactionIds.forEach((id) => {
         const ref = doc(
           db,
           'users',
@@ -349,6 +340,18 @@ export function useFinance(filter?: DateRange) {
           id,
         );
         batch.update(ref, { status: 'pago' });
+      });
+      debtUpdates.forEach(({ id, paidInstallments, status }) => {
+        const ref = doc(
+          db,
+          'users',
+          user.id,
+          'accounts',
+          accountType,
+          'debts',
+          id,
+        );
+        batch.update(ref, { paidInstallments, status });
       });
       await batch.commit();
     },

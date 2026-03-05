@@ -133,27 +133,67 @@ export default function CardsView() {
               string,
               { month: string; total: number; count: number }
             > = {};
-            cardTransactions.forEach((t) => {
-              if (!t.date) return;
-              try {
-                const date = new Date(
-                  t.date.includes('T') ? t.date : `${t.date}T00:00:00`,
-                );
-                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                const monthLabel = format(date, 'MMMM yyyy', { locale: ptBR });
-                if (!invoicesByMonth[key]) {
-                  invoicesByMonth[key] = {
-                    month: monthLabel,
-                    total: 0,
-                    count: 0,
-                  };
+
+            if (cardDebts.length > 0) {
+              // Build forecast from debt installment schedules (same source of
+              // truth as usedLimit) to avoid gaps when transactions are missing
+              // or out of sync with debt paidInstallments.
+              cardDebts.forEach((d) => {
+                if (!d.dueDate) return;
+                const startPaid = d.paidInstallments || 0;
+                for (let i = startPaid + 1; i <= d.installments; i++) {
+                  try {
+                    const due = new Date(
+                      d.dueDate.includes('T')
+                        ? d.dueDate
+                        : `${d.dueDate}T00:00:00`,
+                    );
+                    // dueDate is the first installment due date; shift by (i-1) months
+                    const instDate = new Date(
+                      due.getFullYear(),
+                      due.getMonth() + (i - 1),
+                      due.getDate(),
+                    );
+                    const key = `${instDate.getFullYear()}-${String(instDate.getMonth() + 1).padStart(2, '0')}`;
+                    const monthLabel = format(instDate, 'MMMM yyyy', {
+                      locale: ptBR,
+                    });
+                    if (!invoicesByMonth[key]) {
+                      invoicesByMonth[key] = { month: monthLabel, total: 0, count: 0 };
+                    }
+                    invoicesByMonth[key].total += d.installmentAmount;
+                    invoicesByMonth[key].count += 1;
+                  } catch {
+                    /* skip invalid dates */
+                  }
                 }
-                invoicesByMonth[key].total += t.amount;
-                invoicesByMonth[key].count += 1;
-              } catch {
-                /* skip invalid dates */
-              }
-            });
+              });
+            } else {
+              // Fallback: use transaction records when no debts exist
+              cardTransactions.forEach((t) => {
+                if (!t.date) return;
+                try {
+                  const date = new Date(
+                    t.date.includes('T') ? t.date : `${t.date}T00:00:00`,
+                  );
+                  const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                  const monthLabel = format(date, 'MMMM yyyy', {
+                    locale: ptBR,
+                  });
+                  if (!invoicesByMonth[key]) {
+                    invoicesByMonth[key] = { month: monthLabel, total: 0, count: 0 };
+                  }
+                  invoicesByMonth[key].total += t.amount;
+                  invoicesByMonth[key].count += 1;
+                } catch {
+                  /* skip invalid dates */
+                }
+              });
+            }
+
+            // Total pendente: use debt remaining when available (source of truth)
+            const forecastTotal =
+              cardDebts.length > 0 ? cardDebtRemaining : transactionUsed;
 
             const sortedInvoices = Object.entries(invoicesByMonth)
               .sort(([a], [b]) => a.localeCompare(b))
@@ -434,15 +474,81 @@ export default function CardsView() {
                                         <button
                                           disabled={isThisLoading}
                                           onClick={() => {
+                                            const transactionIds = transactions
+                                              .filter((t) => {
+                                                if (
+                                                  t.cardId !== card.id ||
+                                                  t.status !== 'a_pagar'
+                                                )
+                                                  return false;
+                                                if (!t.date) return false;
+                                                const dateStr = t.date.includes(
+                                                  'T',
+                                                )
+                                                  ? t.date
+                                                  : `${t.date}T00:00:00`;
+                                                const d = new Date(dateStr);
+                                                const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                                                return k === invoice.key;
+                                              })
+                                              .map((t) => t.id);
+
+                                            // Find which debt installments fall in this invoice month
+                                            const [tyear, tmonth] = invoice.key
+                                              .split('-')
+                                              .map(Number);
+                                            const debtUpdates = cardDebts
+                                              .filter((d) => d.dueDate)
+                                              .flatMap((d) => {
+                                                const due = new Date(
+                                                  d.dueDate.includes('T')
+                                                    ? d.dueDate
+                                                    : `${d.dueDate}T00:00:00`,
+                                                );
+                                                const idx =
+                                                  (tyear - due.getFullYear()) *
+                                                    12 +
+                                                  (tmonth -
+                                                    (due.getMonth() + 1)) +
+                                                  1;
+                                                const currentPaid =
+                                                  d.paidInstallments || 0;
+                                                if (
+                                                  idx < 1 ||
+                                                  idx > d.installments ||
+                                                  idx <= currentPaid
+                                                )
+                                                  return [];
+                                                return [
+                                                  {
+                                                    id: d.id,
+                                                    paidInstallments: idx,
+                                                    status:
+                                                      idx >= d.installments
+                                                        ? 'pago'
+                                                        : 'a_pagar',
+                                                  },
+                                                ];
+                                              });
+
                                             payInvoiceMonth({
                                               cardId: card.id,
                                               yearMonth: invoice.key,
-                                            }).then(() =>
-                                              setPendingPayMonth((prev) => ({
-                                                ...prev,
-                                                [card.id]: null,
-                                              })),
-                                            );
+                                              transactionIds,
+                                              debtUpdates,
+                                            })
+                                              .then(() =>
+                                                setPendingPayMonth((prev) => ({
+                                                  ...prev,
+                                                  [card.id]: null,
+                                                })),
+                                              )
+                                              .catch(() =>
+                                                setPendingPayMonth((prev) => ({
+                                                  ...prev,
+                                                  [card.id]: null,
+                                                })),
+                                              );
                                           }}
                                           className='text-emerald-500 hover:text-emerald-400 disabled:opacity-50 transition-all'
                                           title='Confirmar pagamento'
@@ -487,7 +593,7 @@ export default function CardsView() {
                               <div className='flex justify-between text-xs font-semibold pt-1.5 px-3'>
                                 <span>Total pendente:</span>
                                 <span className='text-red-500'>
-                                  {formatCurrency(transactionUsed)}
+                                  {formatCurrency(forecastTotal)}
                                 </span>
                               </div>
                             </div>
