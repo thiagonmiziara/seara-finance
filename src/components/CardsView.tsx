@@ -212,11 +212,11 @@ export default function CardsView() {
             return (
               <Card
                 key={card.id}
-                className='overflow-hidden hover:shadow-lg transition-all duration-300 border-border/40'
+                className='overflow-hidden hover:shadow-lg transition-all duration-300 border-border/40 p-0'
               >
                 {/* Physical card face */}
                 <div
-                  className='relative p-5 pb-4 min-h-[170px] flex flex-col justify-between'
+                  className='relative p-3 sm:p-5 pb-4 min-h-[170px] flex flex-col justify-between'
                   style={{
                     background: `linear-gradient(135deg, ${card.color}22 0%, ${card.color}44 100%)`,
                     borderBottom: `3px solid ${card.color}`,
@@ -266,7 +266,7 @@ export default function CardsView() {
                 </div>
 
                 {/* Limit bar section */}
-                <CardContent className='pb-3 pt-4 space-y-3'>
+                <CardContent className='pb-3 pt-4 space-y-3 px-3 sm:px-6'>
                   <div className='flex justify-between items-center text-sm'>
                     <span className='text-muted-foreground'>Limite Total:</span>
                     <span className='font-semibold'>
@@ -307,10 +307,10 @@ export default function CardsView() {
                             <div>
                               <button
                                 onClick={() => toggleDebts(card.id)}
-                                className='flex items-center justify-between w-full text-xs text-muted-foreground hover:text-foreground transition-colors mb-2'
+                                className='flex items-center justify-between w-full text-sm text-muted-foreground hover:text-foreground transition-colors mb-2 py-1'
                               >
                                 <span className='flex items-center gap-1.5 font-medium'>
-                                  <AlertCircle className='h-3.5 w-3.5' />
+                                  <AlertCircle className='h-4 w-4' />
                                   Parcelas a Pagar ({cardDebts.length})
                                 </span>
                                 {isDebtsExpanded ? (
@@ -329,14 +329,14 @@ export default function CardsView() {
                                     return (
                                       <div
                                         key={debt.id}
-                                        className='text-xs bg-muted/40 rounded-md px-3 py-2 space-y-1.5'
+                                        className='text-sm bg-muted/40 rounded-md px-3 py-2 space-y-1.5'
                                       >
                                         {/* Header da dívida */}
                                         <div className='flex items-center justify-between'>
                                           <p className='text-muted-foreground capitalize font-medium'>
                                             {debt.description}
                                           </p>
-                                          <span className='text-[10px] text-muted-foreground/70'>
+                                          <span className='text-xs text-muted-foreground/70'>
                                             {paidCount}/{debt.installments}{' '}
                                             pagas
                                           </span>
@@ -351,7 +351,7 @@ export default function CardsView() {
                                             return (
                                               <div
                                                 key={i}
-                                                className={`flex items-center justify-between rounded px-2 py-1 transition-all duration-300 ${
+                                                className={`flex items-center justify-between rounded px-2 py-1.5 transition-all duration-300 ${
                                                   isPaid
                                                     ? 'opacity-60'
                                                     : isNext
@@ -386,7 +386,7 @@ export default function CardsView() {
                                                     )}
                                                   </span>
                                                   {isPaid ? (
-                                                    <Check className='h-3.5 w-3.5 text-emerald-500' />
+                                                    <Check className='h-4 w-4 text-emerald-500' />
                                                   ) : isNext ? (
                                                     <button
                                                       onClick={() =>
@@ -394,13 +394,13 @@ export default function CardsView() {
                                                           debt,
                                                         )
                                                       }
-                                                      className='text-emerald-500 hover:text-emerald-600 hover:scale-110 transition-all'
+                                                      className='text-emerald-500 hover:text-emerald-600 hover:scale-110 transition-all p-1 -m-1'
                                                       title='Pagar esta parcela'
                                                     >
-                                                      <Check className='h-3.5 w-3.5' />
+                                                      <Check className='h-4 w-4' />
                                                     </button>
                                                   ) : (
-                                                    <AlertCircle className='h-3.5 w-3.5 text-muted-foreground/40' />
+                                                    <AlertCircle className='h-4 w-4 text-muted-foreground/40' />
                                                   )}
                                                 </div>
                                               </div>
@@ -433,10 +433,10 @@ export default function CardsView() {
                         <div>
                           <button
                             onClick={() => toggleForecast(card.id)}
-                            className='flex items-center justify-between w-full text-xs text-muted-foreground hover:text-foreground transition-colors'
+                            className='flex items-center justify-between w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-1'
                           >
                             <span className='flex items-center gap-1.5 font-medium'>
-                              <CalendarRange className='h-3.5 w-3.5' />
+                              <CalendarRange className='h-4 w-4' />
                               Previsão de Fatura ({sortedInvoices.length}{' '}
                               {sortedInvoices.length === 1 ? 'mês' : 'meses'})
                             </span>
@@ -458,13 +458,13 @@ export default function CardsView() {
                                 return (
                                   <div
                                     key={invoice.month}
-                                    className='flex items-center justify-between text-xs bg-muted/40 rounded-md px-3 py-2 gap-2'
+                                    className='flex items-center justify-between text-sm bg-muted/40 rounded-md px-3 py-2.5 gap-2'
                                   >
                                     <span className='capitalize text-muted-foreground flex-1'>
                                       {invoice.month}
                                     </span>
                                     <div className='flex items-center gap-2'>
-                                      <span className='text-muted-foreground text-[10px]'>
+                                      <span className='text-muted-foreground text-xs'>
                                         {invoice.count}{' '}
                                         {invoice.count === 1
                                           ? 'parcela'
@@ -558,13 +558,13 @@ export default function CardsView() {
                                                 })),
                                               );
                                           }}
-                                          className='text-emerald-500 hover:text-emerald-400 disabled:opacity-50 transition-all'
+                                          className='text-emerald-500 hover:text-emerald-400 disabled:opacity-50 transition-all p-1 -m-1'
                                           title='Confirmar pagamento'
                                         >
                                           {isThisLoading ? (
-                                            <Loader2 className='h-3.5 w-3.5 animate-spin' />
+                                            <Loader2 className='h-4 w-4 animate-spin' />
                                           ) : (
-                                            <Check className='h-3.5 w-3.5' />
+                                            <Check className='h-4 w-4' />
                                           )}
                                         </button>
                                         <button
@@ -575,10 +575,10 @@ export default function CardsView() {
                                               [card.id]: null,
                                             }))
                                           }
-                                          className='text-muted-foreground hover:text-foreground disabled:opacity-50 transition-all'
+                                          className='text-muted-foreground hover:text-foreground disabled:opacity-50 transition-all p-1 -m-1'
                                           title='Cancelar'
                                         >
-                                          <X className='h-3.5 w-3.5' />
+                                          <X className='h-4 w-4' />
                                         </button>
                                       </div>
                                     ) : (
@@ -589,16 +589,16 @@ export default function CardsView() {
                                             [card.id]: invoice.key,
                                           }))
                                         }
-                                        className='text-muted-foreground/40 hover:text-emerald-500 transition-all'
+                                        className='text-muted-foreground/40 hover:text-emerald-500 transition-all p-1 -m-1'
                                         title='Marcar fatura como paga'
                                       >
-                                        <Check className='h-3.5 w-3.5' />
+                                        <Check className='h-4 w-4' />
                                       </button>
                                     )}
                                   </div>
                                 );
                               })}
-                              <div className='flex justify-between text-xs font-semibold pt-1.5 px-3'>
+                              <div className='flex justify-between text-sm font-semibold pt-1.5 px-3'>
                                 <span>Total pendente:</span>
                                 <span className='text-red-500'>
                                   {formatCurrency(forecastTotal)}
@@ -611,7 +611,7 @@ export default function CardsView() {
                     </div>
                   )}
                 </CardContent>
-                <CardFooter className='bg-muted/30 px-6 py-3 border-t border-border/40 flex justify-end'>
+                <CardFooter className='bg-muted/30 px-3 sm:px-6 py-3 border-t border-border/40 flex justify-end'>
                   <DeleteCardDialog
                     card={card}
                     pendingTransactions={cardTransactions}
