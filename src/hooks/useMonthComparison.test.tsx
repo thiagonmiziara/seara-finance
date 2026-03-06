@@ -36,6 +36,10 @@ describe('useMonthComparison', () => {
       'expense',
     );
 
+    if (Array.isArray(comparison)) {
+      throw new Error('Expected total comparison object');
+    }
+
     expect(comparison.monthA).toBe(100);
     expect(comparison.monthB).toBe(50);
     expect(comparison.difference).toBe(50);

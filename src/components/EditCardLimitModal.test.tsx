@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EditCardLimitModal } from './EditCardLimitModal';
 import type { CreditCard } from '@/types';
+import type { ComponentProps } from 'react';
 
 vi.mock('@/lib/cardBrand', () => ({
   detectCardBrand: vi.fn(() => 'visa'),
@@ -22,10 +23,12 @@ describe('EditCardLimitModal', () => {
     createdAt: '2024-01-01T00:00:00.000Z',
   };
 
-  let onUpdateLimit: ReturnType<typeof vi.fn>;
+  let onUpdateLimit: ComponentProps<typeof EditCardLimitModal>['onUpdateLimit'];
 
   beforeEach(() => {
-    onUpdateLimit = vi.fn().mockResolvedValue(undefined);
+    onUpdateLimit = vi.fn().mockResolvedValue(undefined) as ComponentProps<
+      typeof EditCardLimitModal
+    >['onUpdateLimit'];
   });
 
   it('abre o modal ao clicar no botao de editar', () => {

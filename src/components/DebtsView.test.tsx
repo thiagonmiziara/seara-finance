@@ -2,8 +2,6 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import DebtsView from './DebtsView';
 import * as useDebtsHook from '@/hooks/useDebts';
-import { DebtFormValues } from '@/types';
-import { MutateOptions } from '@tanstack/react-query';
 
 vi.mock('@/hooks/useDebts');
 
@@ -21,34 +19,7 @@ describe('DebtsView', () => {
       isAdding: false,
       isDeleting: false,
       isInitialLoading: false,
-      updateDebt: function (
-        variables: { id: string; data: Partial<DebtFormValues> },
-        options?:
-          | MutateOptions<
-              void,
-              Error,
-              { id: string; data: Partial<DebtFormValues> },
-              {
-                previousDebts:
-                  | {
-                      id: string;
-                      createdAt: string;
-                      status: 'pago' | 'a_pagar';
-                      description: string;
-                      installments: number;
-                      totalAmount: number;
-                      installmentAmount: number;
-                      dueDate: string;
-                      cardId?: string | undefined;
-                      paidInstallments?: number | undefined;
-                    }[]
-                  | undefined;
-              }
-            >
-          | undefined,
-      ): Promise<void> {
-        throw new Error('Function not implemented.');
-      },
+      updateDebt: vi.fn(async () => undefined),
       isUpdating: false,
       isLoading: false,
     });
