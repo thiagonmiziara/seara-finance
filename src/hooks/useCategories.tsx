@@ -87,13 +87,16 @@ function useCategoriesInternal() {
       q,
       async (snap) => {
         if (snap.empty) {
-          // If there are already custom/local categories in state, keep them.
+          // Merge defaults with any custom/local categories already in state
           setCategories((prev) => {
-            const hasCustom = prev.some(
-              (c) => !DEFAULT_CATEGORIES.find((d) => d.value === c.value),
-            );
-            if (hasCustom) return prev;
-            return DEFAULT_CATEGORIES.map((c) => ({ ...c }));
+            const merged = new Map<string, Category>();
+            DEFAULT_CATEGORIES.forEach((c) => merged.set(c.value, { ...c }));
+            prev.forEach((c) => {
+              if (!DEFAULT_CATEGORIES.find((d) => d.value === c.value)) {
+                merged.set(c.value, c);
+              }
+            });
+            return Array.from(merged.values());
           });
           setLoading(false);
           return;
@@ -116,7 +119,14 @@ function useCategoriesInternal() {
 
           for (const lc of toSync) {
             try {
-              const collRef = collection(db, 'users', user.id, 'accounts', accountType, 'categories');
+              const collRef = collection(
+                db,
+                'users',
+                user.id,
+                'accounts',
+                accountType,
+                'categories',
+              );
               await addDoc(collRef, {
                 value: lc.value,
                 label: lc.label,
@@ -137,7 +147,11 @@ function useCategoriesInternal() {
           // ignore localStorage parse errors
         }
 
-        setCategories(cats);
+        // Merge defaults with Firestore cats (defaults first, Firestore overrides)
+        const merged = new Map<string, Category>();
+        DEFAULT_CATEGORIES.forEach((c) => merged.set(c.value, { ...c }));
+        cats.forEach((c) => merged.set(c.value, c));
+        setCategories(Array.from(merged.values()));
         setLoading(false);
       },
       (e) => {
@@ -194,7 +208,14 @@ function useCategoriesInternal() {
 
       if (user) {
         try {
-          const collRef = collection(db, 'users', user.id, 'accounts', accountType, 'categories');
+          const collRef = collection(
+            db,
+            'users',
+            user.id,
+            'accounts',
+            accountType,
+            'categories',
+          );
 
           // quick check for existing value
           const existing = await getDocs(
@@ -254,7 +275,7 @@ function useCategoriesInternal() {
                   ),
                 ),
               );
-            } catch (e) { }
+            } catch (e) {}
             return next;
           });
           return newCat;
@@ -309,6 +330,11 @@ function useCategoriesInternal() {
 
   const deleteCategory = useCallback(
     async (value: string) => {
+      // Prevent deletion of default categories
+      if (DEFAULT_CATEGORIES.some((d) => d.value === value)) {
+        return;
+      }
+
       // If user is not logged, just remove from localStorage and state
       if (!user) {
         try {
@@ -326,7 +352,14 @@ function useCategoriesInternal() {
 
       try {
         const q = query(
-          collection(db, 'users', user.id, 'accounts', accountType, 'categories'),
+          collection(
+            db,
+            'users',
+            user.id,
+            'accounts',
+            accountType,
+            'categories',
+          ),
           where('value', '==', value),
         );
         const snap = await getDocs(q);
@@ -340,7 +373,7 @@ function useCategoriesInternal() {
             const localCats: Category[] = raw ? JSON.parse(raw) : [];
             const next = localCats.filter((c) => c.value !== value);
             localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
-          } catch (e) { }
+          } catch (e) {}
           return;
         }
 
@@ -358,7 +391,7 @@ function useCategoriesInternal() {
           const localCats: Category[] = raw ? JSON.parse(raw) : [];
           const next = localCats.filter((c) => c.value !== value);
           localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
-        } catch (e) { }
+        } catch (e) {}
       } catch (e: any) {
         // If deletion fails (for example due to Firestore permissions),
         // fallback to removing the category locally and do not log to console.
