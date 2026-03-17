@@ -75,7 +75,7 @@ export function useRecurringBillsSync() {
           );
           const dueDate = `${yearMonth}-${String(dueDay).padStart(2, '0')}`;
 
-          const newRef = doc(collection(txRef));
+          const newRef = doc(txRef);
           batch.set(newRef, {
             description: bill.description,
             amount: bill.amount,
