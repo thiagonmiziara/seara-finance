@@ -6,6 +6,7 @@ import {
   format,
   startOfDay,
   endOfDay,
+  addMonths,
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AddTransactionModal } from '@/components/AddTransactionModal';
@@ -16,11 +17,14 @@ import { TransactionTable } from '@/components/TransactionTable';
 import MonthComparisonChart from '@/components/MonthComparisonChart';
 import DebtsView from '@/components/DebtsView';
 import CardsView from '@/components/CardsView';
+import { RecurringBillsSummary } from '@/components/RecurringBillsSummary';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useFinance } from '@/hooks/useFinance';
+import { useRecurringBills } from '@/hooks/useRecurringBills';
 import { useMigration } from '@/hooks/useMigration';
+import { Transaction } from '@/types';
 import { useTheme } from '@/hooks/useTheme';
 import { Download, LogOut, Moon, RotateCcw, Sun } from 'lucide-react';
 import {
@@ -82,18 +86,111 @@ export default function Dashboard() {
   }, [period, customRange]);
 
   const {
-    transactions,
-    dashboardTransactions,
+    transactions: realTransactions,
+    dashboardTransactions: realDashboardTransactions,
     allTransactions,
     addTransaction,
     addTransfer,
     removeTransaction,
-    summary,
-    exportToCSV,
+    exportToCSV: rawExportToCSV,
     isAdding,
     isDeleting,
     isInitialLoading,
   } = useFinance(dateRange);
+
+  const { recurringBills } = useRecurringBills();
+
+  const projectedTransactions = useMemo(() => {
+    const projected: Transaction[] = [];
+    const activeBills = recurringBills.filter((b) => b.isActive);
+    if (!activeBills.length) return projected;
+
+    const currentMonth = startOfMonth(new Date());
+    const monthsToCheck: Date[] = [];
+    let d = startOfMonth(dateRange.from);
+    const end = startOfMonth(dateRange.to);
+    
+    while (d <= end) {
+      if (d >= currentMonth) {
+        monthsToCheck.push(d);
+      }
+      d = addMonths(d, 1);
+    }
+
+    if (!monthsToCheck.length) return projected;
+
+    monthsToCheck.forEach((monthDate) => {
+      const yearMonth = format(monthDate, 'yyyy-MM');
+      activeBills.forEach((bill) => {
+        const exists = allTransactions.some(
+          (t) => t.recurringBillId === bill.id && t.recurringYearMonth === yearMonth,
+        );
+        if (!exists) {
+          const year = monthDate.getFullYear();
+          const month = monthDate.getMonth();
+          const dueDay = Math.min(bill.dueDay, new Date(year, month + 1, 0).getDate());
+          const projectedDate = new Date(year, month, dueDay, 12, 0, 0)
+            .toISOString()
+            .split('T')[0];
+
+          const txDate = startOfDay(new Date(year, month, dueDay, 12, 0, 0));
+          if (txDate >= startOfDay(dateRange.from) && txDate <= endOfDay(dateRange.to)) {
+            projected.push({
+              id: `virtual-${bill.id}-${yearMonth}`,
+              description: bill.description + (bill.type === 'expense' ? ' (Dívida Fixa)' : ' (Receita Fixa)'),
+              amount: bill.amount,
+              type: bill.type,
+              category: bill.category,
+              date: projectedDate,
+              status: 'a_pagar',
+              createdAt: new Date().toISOString(),
+              recurringBillId: bill.id,
+              recurringYearMonth: yearMonth,
+              isProjected: true,
+            } as Transaction);
+          }
+        }
+      });
+    });
+
+    return projected;
+  }, [recurringBills, dateRange, allTransactions]);
+
+  const dashboardTransactions = useMemo(
+    () =>
+      [...realDashboardTransactions, ...projectedTransactions].sort((a, b) =>
+        b.date.localeCompare(a.date),
+      ),
+    [realDashboardTransactions, projectedTransactions],
+  );
+
+  const transactions = useMemo(
+    () =>
+      [...realTransactions, ...projectedTransactions].sort((a, b) =>
+        b.date.localeCompare(a.date),
+      ),
+    [realTransactions, projectedTransactions],
+  );
+
+  const summary = useMemo(() => {
+    return dashboardTransactions.reduce(
+      (acc, t) => {
+        if (t.type === 'income') {
+          acc.income += t.amount;
+          acc.balance += t.amount;
+        } else {
+          acc.expense += t.amount;
+          acc.balance -= t.amount;
+        }
+        return acc;
+      },
+      { income: 0, expense: 0, balance: 0 },
+    );
+  }, [dashboardTransactions]);
+
+  const exportToCSV = () => {
+    rawExportToCSV(dashboardTransactions);
+  };
 
   // month comparison selectors (any two months)
   const [monthA, setMonthA] = useState(
@@ -171,10 +268,10 @@ export default function Dashboard() {
 
       {/* Navigation Tabs */}
       <div className='border-b bg-card w-full hidden md:block'>
-        <div className='container mx-auto px-4 flex gap-6'>
+        <div className='container mx-auto px-4 flex gap-6 overflow-x-auto'>
           <button
             onClick={() => setActiveTab('overview')}
-            className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'overview'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
@@ -184,7 +281,7 @@ export default function Dashboard() {
           </button>
           <button
             onClick={() => setActiveTab('debts')}
-            className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'debts'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
@@ -194,7 +291,7 @@ export default function Dashboard() {
           </button>
           <button
             onClick={() => setActiveTab('cards')}
-            className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === 'cards'
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
@@ -244,10 +341,11 @@ export default function Dashboard() {
       <main className='container mx-auto flex-1 space-y-8 p-4 py-8 md:p-8'>
         {activeTab === 'overview' ? (
           <>
-            <div className='flex flex-col space-y-6 md:flex-row md:items-end md:justify-between md:space-y-0 bg-card p-4 rounded-xl border border-border/50 shadow-sm'>
-              <div className='flex flex-col space-y-4 md:flex-row md:items-center md:space-x-4 md:space-y-0 w-full lg:w-auto'>
-                <div className='space-y-1.5 flex-1 min-w-[200px]'>
-                  <label className='text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1'>
+            {/* Filters + Export + New Transaction */}
+          <div className='flex flex-col space-y-6 md:flex-row md:items-end md:justify-between md:space-y-0 bg-card p-4 rounded-xl border border-border/50 shadow-sm'>
+              <div className='flex flex-col space-y-4 md:flex-row md:items-center md:space-x-4 md:space-y-0 w-full lg:w-auto flex-wrap gap-y-3'>
+                <div className='space-y-1.5 flex-1 min-w-[160px]'>
+                    <label className='text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1'>
                     Período
                   </label>
                   <Select
@@ -329,10 +427,10 @@ export default function Dashboard() {
                 )}
               </div>
 
-              <div className='flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-x-2 sm:space-y-0 mt-4 md:mt-0'>
+              <div className='flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-x-2 sm:space-y-0 mt-4 md:mt-0 flex-shrink-0'>
                 <Button
                   variant='outline'
-                  className='w-full sm:w-auto hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-50 border-border/50 transition-colors bg-background/50'
+                  className='w-full sm:w-auto hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-50 border-border/50 transition-colors bg-background/50 shrink-0'
                   onClick={() => exportToCSV()}
                 >
                   <Download className='mr-2 h-4 w-4' />
@@ -342,7 +440,7 @@ export default function Dashboard() {
                   onAddTransaction={addTransaction}
                   onAddTransfer={addTransfer}
                   isAdding={isAdding}
-                  className='w-full sm:w-auto'
+                  className='w-full sm:w-auto shrink-0'
                 />
               </div>
             </div>
@@ -415,7 +513,12 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className='space-y-4'>
+            {/* Recurring Bills Summary */}
+            <div className='pt-2'>
+              <RecurringBillsSummary />
+            </div>
+
+            <div className='space-y-4 pt-2'>
               <h3 className='text-xl font-semibold tracking-tight'>
                 Transações
               </h3>

@@ -149,8 +149,8 @@ export function AddTransactionModal({
       <DialogTrigger asChild>
         <Button className={className}>Nova Transação</Button>
       </DialogTrigger>
-      <DialogContent className='sm:max-w-[425px]'>
-        <DialogHeader>
+      <DialogContent className='sm:max-w-[425px] max-h-[90vh] overflow-y-auto flex flex-col'>
+        <DialogHeader className='flex-shrink-0'>
           <DialogTitle>Adicionar Transação</DialogTitle>
           <DialogDescription>
             Insira os detalhes da nova transação aqui. Clique em salvar quando

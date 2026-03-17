@@ -38,6 +38,9 @@ export const transactionSchema = z.object({
       total: z.number(),
     })
     .optional(),
+  recurringBillId: z.string().optional(),
+  recurringYearMonth: z.string().optional(), // "yyyy-MM" for dedup
+  isProjected: z.boolean().optional(),
 });
 
 export type Transaction = z.infer<typeof transactionSchema>;
@@ -125,3 +128,29 @@ export const creditCardFormSchema = creditCardSchema.omit({
   createdAt: true,
 });
 export type CreditCardFormValues = z.infer<typeof creditCardFormSchema>;
+
+// ─── Recurring Bills ────────────────────────────────────────────────────────
+
+export const recurringBillSchema = z.object({
+  id: z.string().uuid(),
+  description: z.string().min(1, 'Descrição é obrigatória'),
+  amount: z
+    .number({
+      required_error: 'Valor é obrigatório',
+      invalid_type_error: 'Informe um valor válido',
+    })
+    .min(0.01, 'Valor deve ser maior que zero'),
+  category: z.string().min(1, 'Categoria é obrigatória'),
+  type: z.enum(['income', 'expense']),
+  dueDay: z.number().int().min(1).max(31), // day of month (1–31)
+  isActive: z.boolean(),
+  createdAt: z.string(),
+});
+
+export type RecurringBill = z.infer<typeof recurringBillSchema>;
+
+export const recurringBillFormSchema = recurringBillSchema.omit({
+  id: true,
+  createdAt: true,
+});
+export type RecurringBillFormValues = z.infer<typeof recurringBillFormSchema>;

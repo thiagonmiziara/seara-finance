@@ -447,7 +447,7 @@ export function useFinance(filter?: DateRange) {
     { income: 0, expense: 0, balance: 0 },
   );
 
-  const exportToCSV = (filteredTransactions?: Transaction[]) => {
+  const exportToCSV = async (filteredTransactions?: Transaction[]) => {
     const dataToExport = filteredTransactions ?? dateFilteredTransactions;
     const headers = [
       'Descrição',
@@ -491,18 +491,41 @@ export function useFinance(filter?: DateRange) {
       headers.map(escapeCsv).join(';'),
       ...rows.map((e) => e.map(escapeCsv).join(';')),
     ].join('\n');
-    const blob = new Blob(['\ufeff' + csvContent], {
-      type: 'text/csv;charset=utf-8;',
-    });
-    const url = URL.createObjectURL(blob);
+    
+    if ('showSaveFilePicker' in window) {
+      try {
+        const handle = await (window as any).showSaveFilePicker({
+          suggestedName: 'transacoes_seara_finance.csv',
+          types: [{
+            description: 'Arquivo CSV',
+            accept: { 'text/csv': ['.csv'] },
+          }],
+        });
+        const writable = await handle.createWritable();
+        await writable.write('\uFEFF' + csvContent);
+        await writable.close();
+        return;
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error('Falha ao salvar:', err);
+        } else {
+          return;
+        }
+      }
+    }
+
+    // Use Data URI instead of Blob URL string which is bulletproof across browsers
+    const dataUri =
+      'data:text/csv;charset=utf-8,' + encodeURIComponent('\uFEFF' + csvContent);
 
     const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'transacoes_seara_finance.csv');
+    link.href = dataUri;
+    link.download = 'transacoes_seara_finance.csv';
+    link.style.display = 'none';
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   };
 
   return {

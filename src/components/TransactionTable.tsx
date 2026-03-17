@@ -214,6 +214,8 @@ export function TransactionTable({
       cell: ({ row }) => {
         const transaction = row.original;
 
+        if (transaction.isProjected) return null;
+
         return (
           <Button
             variant='ghost'
@@ -261,7 +263,7 @@ export function TransactionTable({
 
   return (
     <div className='w-full'>
-      <div className='flex flex-col items-stretch gap-3 py-4 md:flex-row md:items-center'>
+      <div className='flex flex-wrap items-start gap-3 py-4'>
         <div className='text-sm font-semibold text-muted-foreground md:hidden'>
           Filtros
         </div>
@@ -491,21 +493,23 @@ export function TransactionTable({
                       )?.label ?? transaction.category}
                     </p>
                   </div>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    className='h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors'
-                    onClick={async () => {
-                      setDeletingId(transaction.id);
-                      await onDelete(transaction.id);
-                      setDeletingId(null);
-                    }}
-                    disabled={isDeleting && deletingId === transaction.id}
-                  >
-                    <Trash
-                      className={`h-4 w-4 ${isDeleting && deletingId === transaction.id ? 'animate-pulse' : ''}`}
-                    />
-                  </Button>
+                  {!transaction.isProjected && (
+                    <Button
+                      variant='ghost'
+                      size='icon'
+                      className='h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors'
+                      onClick={async () => {
+                        setDeletingId(transaction.id);
+                        await onDelete(transaction.id);
+                        setDeletingId(null);
+                      }}
+                      disabled={isDeleting && deletingId === transaction.id}
+                    >
+                      <Trash
+                        className={`h-4 w-4 ${isDeleting && deletingId === transaction.id ? 'animate-pulse' : ''}`}
+                      />
+                    </Button>
+                  )}
                 </div>
 
                 <div className='flex items-end justify-between pt-1'>
