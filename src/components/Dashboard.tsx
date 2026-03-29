@@ -10,6 +10,7 @@ import {
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AddTransactionModal } from '@/components/AddTransactionModal';
+import { ImportCSVModal } from '@/components/ImportCSVModal';
 import { CategoryChart } from '@/components/CategoryChart';
 import { SummaryCards } from '@/components/SummaryCards';
 import { TransactionChart } from '@/components/TransactionChart';
@@ -18,6 +19,7 @@ import MonthComparisonChart from '@/components/MonthComparisonChart';
 import DebtsView from '@/components/DebtsView';
 import CardsView from '@/components/CardsView';
 import { RecurringBillsSummary } from '@/components/RecurringBillsSummary';
+import { InsightsWidget } from '@/components/InsightsWidget';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
@@ -90,6 +92,7 @@ export default function Dashboard() {
     dashboardTransactions: realDashboardTransactions,
     allTransactions,
     addTransaction,
+    addTransactionsBatch,
     addTransfer,
     removeTransaction,
     exportToCSV: rawExportToCSV,
@@ -254,6 +257,7 @@ export default function Dashboard() {
                 <Moon className='h-5 w-5' />
               )}
             </Button>
+
             <Button variant='ghost' size='icon' onClick={logout}>
               <LogOut className='h-5 w-5' />
             </Button>
@@ -436,6 +440,10 @@ export default function Dashboard() {
                   <Download className='mr-2 h-4 w-4' />
                   <span className='truncate'>Exportar CSV</span>
                 </Button>
+                <ImportCSVModal 
+                  onAddTransactionsBatch={addTransactionsBatch} 
+                  className='w-full sm:w-auto shrink-0' 
+                />
                 <AddTransactionModal
                   onAddTransaction={addTransaction}
                   onAddTransfer={addTransfer}
@@ -463,6 +471,9 @@ export default function Dashboard() {
             ) : (
               <SummaryCards summary={summary} />
             )}
+
+            {/* Insights: Score & Radar combined */}
+            <InsightsWidget />
 
             <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-7'>
               {isInitialLoading ? (
@@ -537,9 +548,13 @@ export default function Dashboard() {
             </div>
           </>
         ) : activeTab === 'debts' ? (
-          <DebtsView />
+          <div>
+            <DebtsView />
+          </div>
         ) : (
-          <CardsView />
+          <div>
+            <CardsView />
+          </div>
         )}
       </main>
     </div>
