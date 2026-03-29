@@ -32,3 +32,15 @@ dist-ssr
 
 # Firebase
 .firebase
+
+# OpenSquad & AI Agents
+squads/
+_opensquad/
+.opensquad/
+opensquad/
+.agents/
+.agent/
+_agents/
+_agent/
+dashboard/
+skills/

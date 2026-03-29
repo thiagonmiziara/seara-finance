@@ -212,7 +212,7 @@ export function useFinance(filter?: DateRange) {
       queryClient.setQueryData(queryKey, (old: Transaction[] = []) => [
         {
           ...newT,
-          id: 'temp-id',
+          id: `temp-${Date.now()}-${Math.random()}`,
           createdAt: new Date().toISOString(),
         } as Transaction,
         ...old,
@@ -225,8 +225,31 @@ export function useFinance(filter?: DateRange) {
         queryClient.setQueryData(queryKey, context.previousTransactions);
       }
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
+  });
+
+  const addTransactionsBatchMutation = useMutation({
+    mutationFn: async (transactionsData: TransactionFormValues[]) => {
+      if (!user) throw new Error('User not authenticated');
+      if (transactionsData.length === 0) return;
+
+      const chunks = [];
+      for (let i = 0; i < transactionsData.length; i += 500) {
+        chunks.push(transactionsData.slice(i, i + 500));
+      }
+
+      for (const chunk of chunks) {
+        const batch = writeBatch(db);
+        chunk.forEach((data) => {
+          const docRef = doc(
+            collection(db, 'users', user.id, 'accounts', accountType, 'transactions'),
+          );
+          batch.set(docRef, {
+            ...data,
+            createdAt: new Date().toISOString(),
+          });
+        });
+        await batch.commit();
+      }
     },
   });
 
@@ -276,9 +299,7 @@ export function useFinance(filter?: DateRange) {
 
       await batch.commit();
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
-    },
+
   });
 
   // Delete: Use mutation with Optimistic Update
@@ -305,9 +326,6 @@ export function useFinance(filter?: DateRange) {
       if (context?.previousTransactions) {
         queryClient.setQueryData(queryKey, context.previousTransactions);
       }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
     },
   });
 
@@ -377,9 +395,6 @@ export function useFinance(filter?: DateRange) {
       if (context?.previousTransactions) {
         queryClient.setQueryData(queryKey, context.previousTransactions);
       }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
     },
   });
 
@@ -533,12 +548,13 @@ export function useFinance(filter?: DateRange) {
     dashboardTransactions: dateFilteredTransactions,
     allTransactions: transactions,
     addTransaction: addMutation.mutateAsync,
+    addTransactionsBatch: addTransactionsBatchMutation.mutateAsync,
     addTransfer: addTransferMutation.mutateAsync,
     removeTransaction: deleteMutation.mutateAsync,
     payInvoiceMonth: payInvoiceMonthMutation.mutateAsync,
     exportToCSV,
     summary,
-    isAdding: addMutation.isPending || addTransferMutation.isPending,
+    isAdding: addMutation.isPending || addTransactionsBatchMutation.isPending || addTransferMutation.isPending,
     isDeleting: deleteMutation.isPending,
     isPayingInvoice: payInvoiceMonthMutation.isPending,
     isInitialLoading: isPending && user !== null,

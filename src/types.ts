@@ -109,6 +109,7 @@ export const creditCardSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1, 'Nome do cartão é obrigatório'),
   limit: z.number().min(0.01, 'Limite deve ser maior que zero'),
+  limit_user_defined: z.number().min(0.01, 'Limite planejado deve ser maior que zero').optional(),
   closingDay: z.number().min(1).max(31),
   dueDay: z.number().min(1).max(31),
   color: z.string(),

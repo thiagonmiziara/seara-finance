@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useCards } from '@/hooks/useCards';
+import { useSmartCreditScore, getStatusColor } from '@/hooks/useSmartCreditScore';
 import { useFinance } from '@/hooks/useFinance';
 import { useDebts } from '@/hooks/useDebts';
 import { AddCardModal } from './AddCardModal';
@@ -45,6 +46,30 @@ export default function CardsView() {
   const [pendingPayMonth, setPendingPayMonth] = useState<
     Record<string, string | null>
   >({});
+
+  const cardsUsageData = useMemo(() => {
+    return cards.map((card) => {
+      const cardTransactions = transactions.filter(
+        (t) => t.cardId === card.id && t.status === 'a_pagar',
+      );
+      const cardDebts = debts
+        .filter((d) => d.cardId === card.id && d.status !== 'pago')
+        .filter((d) => d.installments - (d.paidInstallments || 0) > 0);
+      const cardDebtRemaining = cardDebts.reduce((acc, d) => {
+        const paidAmount = (d.paidInstallments || 0) * d.installmentAmount;
+        return acc + (d.totalAmount - paidAmount);
+      }, 0);
+      const transactionUsed = cardTransactions.reduce(
+        (acc, t) => acc + t.amount,
+        0,
+      );
+      const usedLimit =
+        cardDebts.length > 0 ? cardDebtRemaining : transactionUsed;
+      return { card, usedLimit };
+    });
+  }, [cards, transactions, debts]);
+
+  const smartScoreResult = useSmartCreditScore(cardsUsageData);
 
   const toggleForecast = (cardId: string) => {
     setExpandedCards((prev) => ({ ...prev, [cardId]: !prev[cardId] }));
@@ -122,11 +147,12 @@ export default function CardsView() {
             // com transações parceladas que podem já estar representadas como dívidas)
             const usedLimit =
               cardDebts.length > 0 ? cardDebtRemaining : transactionUsed;
-            const availableLimit = Math.max(0, card.limit - usedLimit);
-            const usagePercentage = Math.min(
-              100,
-              Math.max(0, (usedLimit / card.limit) * 100),
-            );
+              
+            const scoreResult = smartScoreResult.cardScores[card.id];
+            const effectiveLimit = card.limit_user_defined || card.limit;
+            const availableLimit = Math.max(0, effectiveLimit - usedLimit);
+            const usagePercentage = Math.min(100, scoreResult?.score || 0);
+            const progressBarColor = scoreResult ? getStatusColor(scoreResult.status) : 'bg-primary';
 
             // Group pending transactions by month for invoice forecast
             const invoicesByMonth: Record<
@@ -274,23 +300,40 @@ export default function CardsView() {
                     </span>
                   </div>
 
+                  {card.limit_user_defined && (
+                    <div className='flex justify-between items-center text-sm'>
+                      <span className='text-muted-foreground text-xs'>Limite Planejado:</span>
+                      <span className='font-semibold text-xs text-primary/90'>
+                        {formatCurrency(card.limit_user_defined)}
+                      </span>
+                    </div>
+                  )}
+
                   <div className='space-y-1.5'>
-                    <div className='flex justify-between text-xs mb-1'>
-                      <span className='text-muted-foreground'>Disponível</span>
-                      <span className='font-medium text-emerald-500'>
+                    <div className='flex justify-between items-end mb-1'>
+                      <div className='flex flex-col gap-1'>
+                        <span className='text-xs text-muted-foreground'>
+                          {card.limit_user_defined ? 'Disponível do Plano' : 'Disponível'}
+                        </span>
+                        {scoreResult && (
+                          <span
+                            className={`text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded w-fit ${progressBarColor
+                              .replace('bg-', 'bg-')
+                              .replace('500', '500/15')} ${progressBarColor.replace('bg-', 'text-')}`}
+                          >
+                            Score: {scoreResult.score.toFixed(1)}% {scoreResult.status === 'Saudável' ? '✨' : ''}
+                          </span>
+                        )}
+                      </div>
+                      <span className={`font-medium ${progressBarColor.replace('bg-', 'text-')}`}>
                         {formatCurrency(availableLimit)}
                       </span>
                     </div>
-                    <div className='h-2 w-full bg-secondary rounded-full overflow-hidden'>
+                    {/* Progress Bar represents the Usage Score */}
+                    <div className='h-2 w-full bg-secondary rounded-full overflow-hidden' title={`Score Técnico: ${scoreResult?.score.toFixed(1)}%`}>
                       <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          usagePercentage > 90
-                            ? 'bg-red-500'
-                            : usagePercentage > 75
-                              ? 'bg-yellow-500'
-                              : 'bg-emerald-500'
-                        }`}
-                        style={{ width: `${100 - usagePercentage}%` }}
+                        className={`h-full rounded-full transition-all duration-500 ${progressBarColor}`}
+                        style={{ width: `${Math.min(100, usagePercentage)}%` }}
                       />
                     </div>
                   </div>

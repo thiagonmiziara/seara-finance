@@ -33,6 +33,7 @@ describe('CardsView', () => {
       dashboardTransactions: [],
       allTransactions: [],
       addTransaction: vi.fn(async () => undefined),
+      addTransactionsBatch: vi.fn(async () => undefined),
       addTransfer: vi.fn(async () => undefined),
       removeTransaction: vi.fn(async () => undefined),
       exportToCSV: vi.fn(),

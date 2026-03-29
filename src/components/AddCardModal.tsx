@@ -39,6 +39,7 @@ const colors = [
 export function AddCardModal({ onAddCard, isAdding }: AddCardModalProps) {
   const [open, setOpen] = useState(false);
   const [amountDisplay, setAmountDisplay] = useState('');
+  const [plannedAmountDisplay, setPlannedAmountDisplay] = useState('');
   const [cardNumberDisplay, setCardNumberDisplay] = useState('');
   const [detectedBrand, setDetectedBrand] =
     useState<CreditCardFormValues['brand']>(undefined);
@@ -74,6 +75,7 @@ export function AddCardModal({ onAddCard, isAdding }: AddCardModalProps) {
       setOpen(false);
       reset();
       setAmountDisplay('');
+      setPlannedAmountDisplay('');
       setCardNumberDisplay('');
       setDetectedBrand(undefined);
     } catch (error) {
@@ -93,6 +95,25 @@ export function AddCardModal({ onAddCard, isAdding }: AddCardModalProps) {
     setValue('limit', numberValue, { shouldValidate: true });
 
     setAmountDisplay(
+      new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }).format(numberValue),
+    );
+  };
+
+  const handlePlannedAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value === '') {
+      setPlannedAmountDisplay('');
+      setValue('limit_user_defined', undefined);
+      return;
+    }
+
+    const numberValue = parseInt(value, 10) / 100;
+    setValue('limit_user_defined', numberValue, { shouldValidate: true });
+
+    setPlannedAmountDisplay(
       new Intl.NumberFormat('pt-BR', {
         style: 'currency',
         currency: 'BRL',
@@ -135,19 +156,37 @@ export function AddCardModal({ onAddCard, isAdding }: AddCardModalProps) {
             </div>
 
             {/* Limit */}
-            <div className='space-y-2'>
-              <Label htmlFor='limit'>Valor do Limite Total</Label>
-              <Input
-                id='limit'
-                value={amountDisplay}
-                onChange={handleAmountChange}
-                placeholder='R$ 0,00'
-              />
-              {errors.limit && (
-                <span className='text-red-500 text-xs'>
-                  {errors.limit.message}
-                </span>
-              )}
+            <div className='grid grid-cols-2 gap-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='limit' className='truncate block'>Limite do Banco</Label>
+                <Input
+                  id='limit'
+                  value={amountDisplay}
+                  onChange={handleAmountChange}
+                  placeholder='R$ 0,00'
+                />
+                {errors.limit && (
+                  <span className='text-red-500 text-xs'>
+                    {errors.limit.message}
+                  </span>
+                )}
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='limit_user_defined' className='truncate block'>
+                  Limite Planejado
+                </Label>
+                <Input
+                  id='limit_user_defined'
+                  value={plannedAmountDisplay}
+                  onChange={handlePlannedAmountChange}
+                  placeholder='R$ 0,00 (Opcional)'
+                />
+                {errors.limit_user_defined && (
+                  <span className='text-red-500 text-xs'>
+                    {errors.limit_user_defined.message}
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className='grid grid-cols-2 gap-4'>
@@ -252,6 +291,7 @@ export function AddCardModal({ onAddCard, isAdding }: AddCardModalProps) {
                 setOpen(false);
                 reset();
                 setAmountDisplay('');
+                setPlannedAmountDisplay('');
               }}
             >
               Cancelar

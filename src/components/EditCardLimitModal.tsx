@@ -24,7 +24,7 @@ interface EditCardLimitModalProps {
   card: CreditCardType;
   onUpdateLimit: (data: {
     id: string;
-    data: { limit: number; brand?: CardBrand; lastFour?: string };
+    data: { limit: number; limit_user_defined?: number; brand?: CardBrand; lastFour?: string };
   }) => Promise<any>;
   isUpdating?: boolean;
 }
@@ -36,7 +36,9 @@ export function EditCardLimitModal({
 }: EditCardLimitModalProps) {
   const [open, setOpen] = useState(false);
   const [amountDisplay, setAmountDisplay] = useState('');
+  const [plannedAmountDisplay, setPlannedAmountDisplay] = useState('');
   const [limitValue, setLimitValue] = useState(card.limit);
+  const [limitPlannedValue, setLimitPlannedValue] = useState<number | undefined>(card.limit_user_defined);
   // Card number: display value typed by user (empty = unchanged)
   const [cardNumberDisplay, setCardNumberDisplay] = useState('');
   const [detectedBrand, setDetectedBrand] = useState<CardBrand | undefined>(
@@ -55,7 +57,18 @@ export function EditCardLimitModal({
           currency: 'BRL',
         }).format(card.limit),
       );
+      if (card.limit_user_defined) {
+        setPlannedAmountDisplay(
+          new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+          }).format(card.limit_user_defined),
+        );
+      } else {
+        setPlannedAmountDisplay('');
+      }
       setLimitValue(card.limit);
+      setLimitPlannedValue(card.limit_user_defined);
       setCardNumberDisplay('');
       setDetectedBrand(card.brand as CardBrand | undefined);
       setDetectedLastFour(card.lastFour);
@@ -91,6 +104,25 @@ export function EditCardLimitModal({
     );
   };
 
+  const handlePlannedAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value === '') {
+      setPlannedAmountDisplay('');
+      setLimitPlannedValue(undefined);
+      return;
+    }
+
+    const numberValue = parseInt(value, 10) / 100;
+    setLimitPlannedValue(numberValue);
+
+    setPlannedAmountDisplay(
+      new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      }).format(numberValue),
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (limitValue <= 0) return;
@@ -99,6 +131,7 @@ export function EditCardLimitModal({
         id: card.id,
         data: {
           limit: limitValue,
+          limit_user_defined: limitPlannedValue,
           brand: detectedBrand,
           lastFour: detectedLastFour,
         },
@@ -131,15 +164,28 @@ export function EditCardLimitModal({
 
         <form onSubmit={handleSubmit} className='space-y-4'>
           {/* Limit */}
-          <div className='space-y-2'>
-            <Label htmlFor='newLimit'>Limite Total</Label>
-            <Input
-              id='newLimit'
-              value={amountDisplay}
-              onChange={handleAmountChange}
-              placeholder='R$ 0,00'
-              autoFocus
-            />
+          <div className='grid grid-cols-2 gap-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='newLimit' className='truncate block'>Limite do Banco</Label>
+              <Input
+                id='newLimit'
+                value={amountDisplay}
+                onChange={handleAmountChange}
+                placeholder='R$ 0,00'
+                autoFocus
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='limit_user_defined' className='truncate block'>
+                Limite Planejado
+              </Label>
+              <Input
+                id='limit_user_defined'
+                value={plannedAmountDisplay}
+                onChange={handlePlannedAmountChange}
+                placeholder='R$ 0,00 (Opcional)'
+              />
+            </div>
           </div>
 
           {/* Divider */}
