@@ -1,152 +1,179 @@
-import { useState } from 'react';
 import { useRecurringBills } from '@/hooks/useRecurringBills';
-import { useRecurringBillsSync } from '@/hooks/useRecurringBillsSync';
 import {
   NewRecurringBillButton,
   EditRecurringBillButton,
-  AddRecurringBillModal,
 } from '@/components/AddRecurringBillModal';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { RecurringBill, RecurringBillFormValues } from '@/types';
 import { CATEGORIES as STATIC_CATEGORIES } from '@/lib/categories';
 import { useCategories } from '@/hooks/useCategories';
-import { Trash2, CalendarClock, Power } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-} from '@/components/ui/dialog';
+  ArrowDownLeft,
+  ArrowUpRight,
+  CalendarClock,
+  Trash2,
+  Repeat,
+} from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
-function formatCurrency(value: number) {
+function fmtBRL(value: number) {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
   }).format(value);
 }
 
+interface BillCardProps {
+  bill: RecurringBill;
+  categoryLabel: string;
+  categoryColor: string;
+  onEdit: (data: RecurringBillFormValues) => Promise<any>;
+  onToggle: () => Promise<any> | void;
+  onRemove: () => Promise<any> | void;
+  isUpdating?: boolean;
+  isDeleting?: boolean;
+}
+
 function BillCard({
   bill,
+  categoryLabel,
+  categoryColor,
   onEdit,
   onToggle,
   onRemove,
-  isDeleting,
   isUpdating,
-}: {
-  bill: RecurringBill;
-  onEdit: (data: RecurringBillFormValues) => Promise<any>;
-  onToggle: () => void;
-  onRemove: () => void;
-  isDeleting?: boolean;
-  isUpdating?: boolean;
-}) {
-  const { categories: dynamicCategories } = useCategories();
-  const allCategories =
-    dynamicCategories.length > 0 ? dynamicCategories : STATIC_CATEGORIES;
-  const cat = allCategories.find((c) => c.value === bill.category);
+  isDeleting,
+}: BillCardProps) {
+  const isIncome = bill.type === 'income';
+  const Icon = isIncome ? ArrowUpRight : ArrowDownLeft;
 
   return (
     <div
-      className={`relative flex-shrink-0 w-[200px] rounded-xl border p-3 bg-card shadow-sm transition-all ${
-        bill.isActive
-          ? 'border-border/60 hover:border-primary/40'
-          : 'border-dashed border-border/40 opacity-60'
-      }`}
+      className={cn(
+        'rounded-2xl border border-border/60 bg-card shadow-card p-4 sm:p-5 transition-all',
+        bill.isActive ? 'hover:border-primary/40' : 'opacity-60',
+      )}
     >
-      {/* Header */}
-      <div className='flex items-start justify-between gap-1 mb-2'>
-        <div className='flex items-center gap-1.5 min-w-0'>
-          {cat && (
-            <span
-              className='h-2.5 w-2.5 rounded-full flex-shrink-0'
-              style={{ backgroundColor: cat.color }}
-            />
-          )}
-          <span className='text-sm font-semibold truncate leading-tight text-foreground'>
-            {bill.description}
-          </span>
-        </div>
+      {/* Top row: icon + title + status pill */}
+      <div className='flex items-start gap-3'>
         <span
-          className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-            bill.isActive
-              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-              : 'bg-muted text-muted-foreground'
-          }`}
+          className='inline-flex h-10 w-10 items-center justify-center rounded-xl shrink-0'
+          style={{ backgroundColor: `${categoryColor}38`, color: categoryColor }}
         >
-          {bill.isActive ? 'Ativa' : 'Inativa'}
+          <Icon className='h-5 w-5' />
         </span>
+
+        <div className='min-w-0 flex-1'>
+          <div className='flex items-center gap-2 flex-wrap'>
+            <h3 className='font-semibold text-foreground truncate'>
+              {bill.description}
+            </h3>
+            <span
+              className={cn(
+                'inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider',
+                bill.isActive
+                  ? 'bg-primary/15 text-primary'
+                  : 'bg-muted text-muted-foreground',
+              )}
+            >
+              {bill.isActive ? 'Ativa' : 'Pausada'}
+            </span>
+          </div>
+          <p className='text-xs text-muted-foreground mt-0.5 truncate'>
+            {categoryLabel} · vence dia {bill.dueDay}
+          </p>
+        </div>
+
+        <EditRecurringBillButton
+          bill={bill}
+          onSave={onEdit}
+          isSaving={isUpdating}
+        />
       </div>
 
       {/* Amount */}
-      <div
-        className={`text-base font-bold mb-1 ${
-          bill.type === 'income' ? 'text-primary' : 'text-red-400'
-        }`}
-      >
-        {bill.type === 'expense' ? '- ' : '+ '}
-        {formatCurrency(bill.amount)}
+      <div className='mt-4 flex items-end gap-1'>
+        <span
+          className={cn(
+            'text-xl sm:text-2xl font-extrabold tabular-nums leading-none',
+            isIncome ? 'text-primary' : 'text-foreground',
+          )}
+        >
+          {isIncome ? '+ ' : '- '}
+          {fmtBRL(bill.amount)}
+        </span>
+        <span className='text-[11px] text-muted-foreground font-medium pb-0.5'>
+          /mês
+        </span>
       </div>
 
-      {/* Due day */}
-      <div className='flex items-center gap-1 text-[11px] text-muted-foreground mb-3'>
-        <CalendarClock className='h-3 w-3 flex-shrink-0' />
-        <span>Vence dia {bill.dueDay}</span>
-      </div>
-
-      {/* Actions */}
-      <div className='flex items-center gap-1'>
-        <EditRecurringBillButton bill={bill} onSave={onEdit} />
+      {/* Footer: toggle + status + delete */}
+      <div className='mt-4 pt-3 border-t border-border/60 flex items-center justify-between gap-2'>
         <button
           type='button'
-          title={bill.isActive ? 'Desativar' : 'Ativar'}
-          onClick={onToggle}
+          role='switch'
+          aria-checked={bill.isActive}
+          aria-label={bill.isActive ? 'Pausar conta fixa' : 'Ativar conta fixa'}
+          onClick={() => onToggle()}
           disabled={isUpdating}
-          className='p-1.5 rounded-md hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors'
+          className={cn(
+            'relative inline-flex h-6 w-11 items-center rounded-full transition-colors shrink-0',
+            bill.isActive ? 'bg-primary' : 'bg-muted',
+          )}
         >
-          <Power className='h-3.5 w-3.5' />
+          <span
+            className={cn(
+              'inline-block h-5 w-5 transform rounded-full bg-white shadow-soft transition-transform',
+              bill.isActive ? 'translate-x-[22px]' : 'translate-x-0.5',
+            )}
+          />
         </button>
-        <button
-          type='button'
-          title='Remover'
-          onClick={onRemove}
-          disabled={isDeleting}
-          className='p-1.5 rounded-md hover:bg-red-100/60 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-500 transition-colors'
-        >
-          <Trash2 className='h-3.5 w-3.5' />
-        </button>
+
+        <span className='hidden sm:inline text-xs text-muted-foreground flex-1 truncate'>
+          {bill.isActive
+            ? 'Lança automaticamente'
+            : 'Pausada — nada será lançado'}
+        </span>
+
+        <ConfirmDialog
+          trigger={
+            <button
+              type='button'
+              className='inline-flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors shrink-0'
+              aria-label={`Excluir conta fixa ${bill.description}`}
+            >
+              <Trash2 className='h-4 w-4' />
+            </button>
+          }
+          title='Excluir conta fixa?'
+          description={`"${bill.description}" será removida. Transações já lançadas não são apagadas.`}
+          onConfirm={() => onRemove()}
+          isLoading={isDeleting}
+        />
       </div>
     </div>
   );
 }
 
-/** Mobile bottom-sheet like Dialog */
-function MobileSheet({
-  open,
-  onClose,
-  children,
-}: {
-  open: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
-}) {
+function EmptyState({ onAdd }: { onAdd: React.ReactNode }) {
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className='fixed inset-x-0 bottom-0 top-auto !translate-x-0 !translate-y-0 !rounded-t-2xl !rounded-b-none max-w-none h-auto max-h-[85dvh] flex flex-col p-0 gap-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom !left-0 !right-0 border-x-0 border-b-0'>
-        {/* Handle bar */}
-        <div className='flex justify-center pt-3 pb-1 flex-shrink-0'>
-          <div className='h-1 w-10 rounded-full bg-muted-foreground/30' />
-        </div>
-        <div className='flex items-center justify-between px-4 pb-3 pt-1 border-b flex-shrink-0'>
-          <h3 className='font-semibold text-base'>Contas Fixas</h3>
-        </div>
-        <div className='overflow-y-auto flex-1 px-4 pb-6'>{children}</div>
-      </DialogContent>
-    </Dialog>
+    <div className='rounded-2xl border border-dashed border-border/60 bg-card/50 p-10 text-center'>
+      <div className='inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary mb-4'>
+        <Repeat className='h-6 w-6' />
+      </div>
+      <h3 className='font-bold text-base'>Nenhuma conta fixa</h3>
+      <p className='text-sm text-muted-foreground mt-1 max-w-sm mx-auto'>
+        Cadastre receitas e despesas que se repetem mensalmente — elas serão
+        lançadas automaticamente todo mês.
+      </p>
+      <div className='mt-4 inline-block'>{onAdd}</div>
+    </div>
   );
 }
 
 export function RecurringBillsSummary() {
-  // Activate auto-sync (generates transactions for current month)
-  useRecurringBillsSync();
-
+  // Auto-sync runs at the AppShell level so it executes only once globally.
   const {
     recurringBills,
     addBill,
@@ -156,184 +183,106 @@ export function RecurringBillsSummary() {
     isAdding,
     isUpdating,
     isDeleting,
+    isLoading,
   } = useRecurringBills();
+  const { categories: dyn } = useCategories();
+  const allCats = dyn.length > 0 ? dyn : STATIC_CATEGORIES;
 
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [addOpen, setAddOpen] = useState(false);
-
-  const handleEdit = (bill: RecurringBill) => (data: RecurringBillFormValues) =>
-    updateBill({ id: bill.id, data });
-
-  const totalMonthly = recurringBills
+  const activeCount = recurringBills.filter((b) => b.isActive).length;
+  const totalNet = recurringBills
     .filter((b) => b.isActive)
-    .reduce((sum, b) => sum + (b.type === 'expense' ? -b.amount : b.amount), 0);
+    .reduce(
+      (sum, b) => sum + (b.type === 'expense' ? -b.amount : b.amount),
+      0,
+    );
+  const isPositive = totalNet >= 0;
 
-  const billList = (
-    <div className='space-y-2 pt-3'>
-      {recurringBills.length === 0 ? (
-        <div className='text-center py-8 text-muted-foreground text-sm'>
-          <CalendarClock className='h-8 w-8 mx-auto mb-2 opacity-30' />
-          <p>Nenhuma conta fixa cadastrada.</p>
-          <p className='text-xs mt-1'>
-            Adicione contas como luz, internet, streaming e elas serão lançadas
-            automaticamente todo mês.
-          </p>
-        </div>
-      ) : (
-        recurringBills.map((bill) => (
-          <div
-            key={bill.id}
-            className='flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2.5 gap-3'
-          >
-            <div className='min-w-0 flex-1'>
-              <div className='flex items-center gap-2'>
-                <span className='font-medium text-sm truncate'>
-                  {bill.description}
-                </span>
-                <span
-                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-                    bill.isActive
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                      : 'bg-muted text-muted-foreground'
-                  }`}
-                >
-                  {bill.isActive ? 'Ativa' : 'Inativa'}
-                </span>
-              </div>
-              <div className='flex items-center gap-2 mt-0.5'>
-                <span
-                  className={`text-sm font-bold ${
-                    bill.type === 'income' ? 'text-primary' : 'text-red-400'
-                  }`}
-                >
-                  {bill.type === 'expense' ? '- ' : '+ '}
-                  {formatCurrency(bill.amount)}
-                </span>
-                <span className='text-[11px] text-muted-foreground'>
-                  · Vence dia {bill.dueDay}
-                </span>
-              </div>
-            </div>
-            <div className='flex items-center gap-0.5 flex-shrink-0'>
-              <EditRecurringBillButton
-                bill={bill}
-                onSave={handleEdit(bill)}
-                isSaving={isUpdating}
-              />
-              <button
-                type='button'
-                onClick={() => toggleActive(bill)}
-                disabled={isUpdating}
-                className='p-1.5 rounded-md hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors'
-                title={bill.isActive ? 'Desativar' : 'Ativar'}
-              >
-                <Power className='h-3.5 w-3.5' />
-              </button>
-              <button
-                type='button'
-                onClick={() => removeBill(bill.id)}
-                disabled={isDeleting}
-                className='p-1.5 rounded-md hover:bg-red-100/60 dark:hover:bg-red-900/20 text-muted-foreground hover:text-red-500 transition-colors'
-                title='Remover'
-              >
-                <Trash2 className='h-3.5 w-3.5' />
-              </button>
-            </div>
-          </div>
-        ))
-      )}
-
-      {/* Add inside list */}
-      <div className='pt-1'>
-        <Button
-          size='sm'
-          variant='ghost'
-          className='w-full border-dashed border border-border/60 text-muted-foreground hover:text-foreground'
-          onClick={() => setAddOpen(true)}
-        >
-          + Nova conta fixa
-        </Button>
-      </div>
-    </div>
-  );
+  const handleEdit =
+    (bill: RecurringBill) => (data: RecurringBillFormValues) =>
+      updateBill({ id: bill.id, data });
 
   return (
-    <>
-      {/* ─── DESKTOP — section above filters ─────────────────────────────── */}
-      <div className='hidden md:block'>
-        <div className='bg-card border border-border/50 rounded-xl p-4 shadow-sm'>
-          <div className='flex items-center justify-between mb-3 flex-wrap gap-2'>
-            <div className='flex items-center gap-2 min-w-0'>
-              <CalendarClock className='h-4 w-4 text-primary flex-shrink-0' />
-              <h3 className='font-semibold text-sm'>Contas Fixas do Mês</h3>
-              {recurringBills.length > 0 && (
-                <span className='text-xs text-muted-foreground'>
-                  · Total ativo:{' '}
-                  <span
-                    className={
-                      totalMonthly >= 0 ? 'text-primary font-medium' : 'text-red-400 font-medium'
-                    }
-                  >
-                    {formatCurrency(Math.abs(totalMonthly))}
-                  </span>
-                </span>
-              )}
+    <div className='space-y-6 anim-fade-up'>
+      {/* Header */}
+      <div className='flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between flex-wrap'>
+        <div className='min-w-0'>
+          <h2 className='text-2xl sm:text-3xl font-extrabold tracking-tight font-display'>
+            Contas fixas
+          </h2>
+          <p className='text-sm text-muted-foreground mt-0.5'>
+            Recorrências mensais que entram automáticas no seu fluxo.
+          </p>
+        </div>
+        <NewRecurringBillButton onSave={addBill} isSaving={isAdding} />
+      </div>
+
+      {/* Hero highlight card */}
+      <section
+        className='relative overflow-hidden rounded-2xl border border-border/60 shadow-card p-5 sm:p-6 brand-gradient'
+      >
+        <div className='flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3'>
+          <div className='min-w-0'>
+            <div className='text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-muted-foreground'>
+              {isPositive
+                ? 'Entrada líquida fixa por mês'
+                : 'Saída líquida fixa por mês'}
             </div>
-            <NewRecurringBillButton onSave={addBill} isSaving={isAdding} />
+            <div
+              className={cn(
+                'mt-1 text-2xl sm:text-3xl font-extrabold tabular-nums tracking-tight',
+                isPositive ? 'text-primary' : 'text-foreground',
+              )}
+            >
+              {isPositive ? '+ ' : '- '}
+              {fmtBRL(Math.abs(totalNet))}
+            </div>
+            <p className='mt-1 text-xs text-muted-foreground'>
+              {activeCount} {activeCount === 1 ? 'conta ativa' : 'contas ativas'} ·{' '}
+              {recurringBills.length}{' '}
+              {recurringBills.length === 1 ? 'cadastrada' : 'cadastradas'}
+            </p>
           </div>
 
-          {recurringBills.length === 0 ? (
-            <div className='flex items-center gap-3 py-2 text-muted-foreground text-sm'>
-              <CalendarClock className='h-5 w-5 opacity-40 flex-shrink-0' />
-              <span>
-                Nenhuma conta fixa ainda. Adicione contas como luz, internet ou streaming — elas serão lançadas automaticamente todo mês.
-              </span>
-            </div>
-          ) : (
-            <div className='flex gap-3 overflow-x-auto pb-1'>
-              {recurringBills.map((bill) => (
-                <BillCard
-                  key={bill.id}
-                  bill={bill}
-                  onEdit={handleEdit(bill)}
-                  onToggle={() => toggleActive(bill)}
-                  onRemove={() => removeBill(bill.id)}
-                  isDeleting={isDeleting}
-                  isUpdating={isUpdating}
-                />
-              ))}
-            </div>
-          )}
+          <div className='inline-flex items-center gap-1.5 self-start sm:self-end rounded-full bg-card/80 backdrop-blur-sm px-3 py-1.5 text-xs font-semibold text-muted-foreground border border-border/60'>
+            <CalendarClock className='h-3.5 w-3.5 text-primary' />
+            Lançadas automaticamente
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* ─── MOBILE — FAB button ──────────────────────────────────────────── */}
-      <div className='md:hidden'>
-        <button
-          onClick={() => setMobileOpen(true)}
-          className='fixed bottom-6 left-4 z-30 flex items-center gap-2 bg-card border border-border shadow-lg rounded-full px-4 py-2.5 text-sm font-medium hover:border-primary/40 hover:shadow-primary/10 transition-all active:scale-95'
-        >
-          <CalendarClock className='h-4 w-4 text-primary flex-shrink-0' />
-          <span>Fixas</span>
-          {recurringBills.filter((b) => b.isActive).length > 0 && (
-            <span className='bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center flex-shrink-0'>
-              {recurringBills.filter((b) => b.isActive).length}
-            </span>
-          )}
-        </button>
-
-        <MobileSheet open={mobileOpen} onClose={() => setMobileOpen(false)}>
-          {billList}
-        </MobileSheet>
-      </div>
-
-      {/* Global add modal */}
-      <AddRecurringBillModal
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        onSave={addBill}
-        isSaving={isAdding}
-      />
-    </>
+      {/* List */}
+      {isLoading ? (
+        <div className='grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3'>
+          <Skeleton className='h-[180px] rounded-2xl' />
+          <Skeleton className='h-[180px] rounded-2xl' />
+          <Skeleton className='h-[180px] rounded-2xl' />
+        </div>
+      ) : recurringBills.length === 0 ? (
+        <EmptyState
+          onAdd={
+            <NewRecurringBillButton onSave={addBill} isSaving={isAdding} />
+          }
+        />
+      ) : (
+        <div className='grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3'>
+          {recurringBills.map((bill) => {
+            const cat = allCats.find((c) => c.value === bill.category);
+            return (
+              <BillCard
+                key={bill.id}
+                bill={bill}
+                categoryLabel={cat?.label ?? bill.category}
+                categoryColor={cat?.color ?? '#64748b'}
+                onEdit={handleEdit(bill)}
+                onToggle={() => toggleActive(bill)}
+                onRemove={() => removeBill(bill.id)}
+                isUpdating={isUpdating}
+                isDeleting={isDeleting}
+              />
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

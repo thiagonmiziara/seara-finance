@@ -14,8 +14,15 @@ vi.mock('firebase/auth', () => ({
   onAuthStateChanged: authMocks.onAuthStateChanged,
 }));
 
+vi.mock('firebase/firestore', () => ({
+  doc: vi.fn(() => ({})),
+  setDoc: vi.fn(() => Promise.resolve()),
+  serverTimestamp: vi.fn(() => 'server-timestamp'),
+}));
+
 vi.mock('@/lib/firebase', () => ({
   auth: {},
+  db: {},
   googleProvider: {},
 }));
 

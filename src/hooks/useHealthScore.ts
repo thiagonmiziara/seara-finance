@@ -22,13 +22,16 @@ export function useHealthScore() {
     if (!allTransactions.length) return null;
 
     // Pilar 1: Uso de Limite (0-30pts)
-    // Quanto menos limite usado, melhor
+    // Quanto menos limite usado, melhor.
+    // Sem cartões = sem dívida de crédito → pontuação cheia.
     const totalLimit = cards.reduce((s, c) => s + (c.limit || 0), 0);
     const totalUsed = allTransactions
       .filter(tx => tx.status === 'a_pagar' && tx.cardId)
       .reduce((s, tx) => s + tx.amount, 0);
-    const usageRatio = totalLimit > 0 ? totalUsed / totalLimit : 1;
-    const limitUsage = Math.round((1 - Math.min(usageRatio, 1)) * 30);
+    const limitUsage =
+      totalLimit > 0
+        ? Math.round((1 - Math.min(totalUsed / totalLimit, 1)) * 30)
+        : 30;
 
     // Pilar 2: Pontualidade (0-30pts)
     // Proporção de transações pagas vs total

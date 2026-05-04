@@ -2,8 +2,10 @@ import { render, screen } from '@testing-library/react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import DebtsView from './DebtsView';
 import * as useDebtsHook from '@/hooks/useDebts';
+import * as useCardsHook from '@/hooks/useCards';
 
 vi.mock('@/hooks/useDebts');
+vi.mock('@/hooks/useCards');
 
 describe('DebtsView', () => {
   beforeEach(() => {
@@ -23,6 +25,18 @@ describe('DebtsView', () => {
       isUpdating: false,
       isLoading: false,
     });
+    const mockedUseCards = vi.mocked(useCardsHook.useCards);
+    mockedUseCards.mockReturnValue({
+      cards: [],
+      addCard: vi.fn(),
+      updateCard: vi.fn(),
+      removeCard: vi.fn(),
+      isAdding: false,
+      isUpdating: false,
+      isDeleting: false,
+      isInitialLoading: false,
+      isLoading: false,
+    } as any);
   });
 
   it('deve exibir o título principal', () => {
@@ -32,11 +46,16 @@ describe('DebtsView', () => {
     ).toBeInTheDocument();
   });
 
-  it('deve exibir "Total em Dívidas" com valor inicial', () => {
+  it('deve exibir os KPIs principais com valor inicial', () => {
     render(<DebtsView />);
-    expect(screen.getByText(/Total em Dívidas/i)).toBeInTheDocument();
+    expect(screen.getByText(/Total contratado/i)).toBeInTheDocument();
+    expect(screen.getByText(/Restante a pagar/i)).toBeInTheDocument();
+    expect(screen.getByText(/Já quitado/i)).toBeInTheDocument();
     expect(screen.getAllByText(/R\$\s?0,00/).length).toBeGreaterThan(0);
   });
 
-  // Outros testes podem ser adicionados para cenários com dívidas, carregamento, etc.
+  it('deve mostrar empty state quando não há dívidas', () => {
+    render(<DebtsView />);
+    expect(screen.getByText(/Sem dívidas cadastradas/i)).toBeInTheDocument();
+  });
 });

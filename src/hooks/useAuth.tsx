@@ -11,7 +11,8 @@ import {
   onAuthStateChanged,
   User as FirebaseUser,
 } from 'firebase/auth';
-import { auth, googleProvider } from '@/lib/firebase';
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { auth, db, googleProvider } from '@/lib/firebase';
 
 export interface User {
   id: string;
@@ -41,11 +42,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       auth,
       (firebaseUser: FirebaseUser | null) => {
         if (firebaseUser) {
+          const name = firebaseUser.displayName || 'Usuário';
+          const email = firebaseUser.email || '';
+          const avatar = firebaseUser.photoURL || null;
           setUser({
             id: firebaseUser.uid,
-            name: firebaseUser.displayName || 'Usuário',
-            email: firebaseUser.email || '',
-            avatar: firebaseUser.photoURL || undefined,
+            name,
+            email,
+            avatar: avatar || undefined,
+          });
+          setDoc(
+            doc(db, 'users', firebaseUser.uid),
+            {
+              name,
+              email,
+              avatar,
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true },
+          ).catch(() => {
+            // Non-blocking: profile sync errors should not break login
           });
         } else {
           setUser(null);
