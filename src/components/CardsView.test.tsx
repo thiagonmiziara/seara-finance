@@ -50,7 +50,7 @@ describe('CardsView', () => {
       updateDebt: vi.fn(async () => undefined),
       removeDebt: vi.fn(async () => undefined),
       settleDebt: vi.fn(async () => undefined),
-      summary: { total: 0, paid: 0, remaining: 0 },
+      summary: { total: 0, paid: 0, remaining: 0, monthlyPayment: 0 },
       isAdding: false,
       isUpdating: false,
       isDeleting: false,

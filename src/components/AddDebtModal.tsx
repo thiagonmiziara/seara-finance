@@ -17,22 +17,47 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { DebtFormValues, debtFormSchema } from '@/types';
+import { Debt, DebtFormValues, debtFormSchema } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { Pencil } from 'lucide-react';
+import { ReactNode, useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 
 interface AddDebtModalProps {
-    onAddDebt: (data: DebtFormValues) => Promise<any>;
+    onAddDebt?: (data: DebtFormValues) => Promise<any>;
+    onUpdateDebt?: (vars: { id: string; data: Partial<DebtFormValues> }) => Promise<any>;
+    debt?: Debt;
     isAdding?: boolean;
+    isUpdating?: boolean;
     className?: string;
+    trigger?: ReactNode;
 }
+
+const todayISO = () => new Date().toISOString().split('T')[0];
+
+const formatBRL = (value: number) => value.toFixed(2).replace('.', ',');
+
+const buildDefaults = (debt?: Debt): DebtFormValues => ({
+    description: debt?.description ?? '',
+    totalAmount: debt?.totalAmount ?? 0,
+    installments: debt?.installments ?? 1,
+    installmentAmount: debt?.installmentAmount ?? 0,
+    paidInstallments: debt?.paidInstallments,
+    status: debt?.status ?? 'a_pagar',
+    dueDate: debt?.dueDate ? debt.dueDate.split('T')[0] : todayISO(),
+    cardId: debt?.cardId,
+});
 
 export function AddDebtModal({
     onAddDebt,
+    onUpdateDebt,
+    debt,
     isAdding,
+    isUpdating,
     className,
+    trigger,
 }: AddDebtModalProps) {
+    const isEdit = !!debt;
     const [open, setOpen] = useState(false);
     const {
         register,
@@ -44,42 +69,52 @@ export function AddDebtModal({
         formState: { errors },
     } = useForm<DebtFormValues>({
         resolver: zodResolver(debtFormSchema),
-        defaultValues: {
-            description: '',
-            totalAmount: 0,
-            installments: 1,
-            installmentAmount: 0,
-            status: 'a_pagar',
-            dueDate: new Date().toISOString().split('T')[0],
-        },
+        defaultValues: buildDefaults(debt),
     });
 
-    const [amountDisplay, setAmountDisplay] = useState('');
-    const [installmentAmountDisplay, setInstallmentAmountDisplay] = useState('');
+    const [amountDisplay, setAmountDisplay] = useState(
+        debt ? formatBRL(debt.totalAmount) : '',
+    );
+    const [installmentAmountDisplay, setInstallmentAmountDisplay] = useState(
+        debt ? formatBRL(debt.installmentAmount) : '',
+    );
+    const [installmentTouched, setInstallmentTouched] = useState(false);
 
-    // Auto-calculate installment amount
+    // Reset form whenever the modal opens (or the debt prop changes)
+    useEffect(() => {
+        if (open) {
+            reset(buildDefaults(debt));
+            setAmountDisplay(debt ? formatBRL(debt.totalAmount) : '');
+            setInstallmentAmountDisplay(
+                debt ? formatBRL(debt.installmentAmount) : '',
+            );
+            setInstallmentTouched(false);
+        }
+    }, [open, debt, reset]);
+
     const totalAmount = watch('totalAmount');
     const installments = watch('installments');
 
+    // Auto-calc parcela apenas quando o usuário não editou manualmente
     useEffect(() => {
-        // Only auto-calc if user hasn't typed a custom value or if total/installments change
+        if (installmentTouched) return;
         if (totalAmount && installments > 0) {
             const calculated = Number((totalAmount / installments).toFixed(2));
             setValue('installmentAmount', calculated);
-            setInstallmentAmountDisplay(calculated.toFixed(2).replace('.', ','));
+            setInstallmentAmountDisplay(formatBRL(calculated));
         }
-    }, [totalAmount, installments, setValue]);
+    }, [totalAmount, installments, setValue, installmentTouched]);
 
     const onSubmit = async (data: DebtFormValues) => {
         try {
-            await onAddDebt(data);
+            if (isEdit && onUpdateDebt && debt) {
+                await onUpdateDebt({ id: debt.id, data });
+            } else if (onAddDebt) {
+                await onAddDebt(data);
+            }
             setOpen(false);
-            reset();
-            setAmountDisplay('');
-            setInstallmentAmountDisplay('');
         } catch (error) {
-            console.error('Failed to add debt:', error);
-            // handled by mutation
+            console.error('Failed to save debt:', error);
         }
     };
 
@@ -96,16 +131,34 @@ export function AddDebtModal({
         onChange(isNaN(numeric) ? 0 : numeric);
     };
 
+    const submitting = isEdit ? isUpdating : isAdding;
+    const defaultTrigger = isEdit ? (
+        <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='h-9 w-9 p-0 text-muted-foreground hover:text-foreground'
+            aria-label={`Editar dívida ${debt?.description ?? ''}`}
+            title='Editar dívida'
+        >
+            <Pencil className='h-4 w-4' />
+        </Button>
+    ) : (
+        <Button className={className}>Nova Dívida</Button>
+    );
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button className={className}>Nova Dívida</Button>
-            </DialogTrigger>
+            <DialogTrigger asChild>{trigger ?? defaultTrigger}</DialogTrigger>
             <DialogContent className='sm:max-w-[425px]'>
                 <DialogHeader>
-                    <DialogTitle>Adicionar Dívida</DialogTitle>
+                    <DialogTitle>
+                        {isEdit ? 'Editar Dívida' : 'Adicionar Dívida'}
+                    </DialogTitle>
                     <DialogDescription>
-                        Insira os detalhes da dívida aqui.
+                        {isEdit
+                            ? 'Atualize os detalhes da dívida.'
+                            : 'Insira os detalhes da dívida aqui.'}
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit(onSubmit)}>
@@ -180,6 +233,33 @@ export function AddDebtModal({
                             </div>
                         </div>
 
+                        {isEdit && (
+                            <div className='grid grid-cols-4 items-center gap-4'>
+                                <Label
+                                    htmlFor='paidInstallments'
+                                    className='text-right'
+                                >
+                                    Parcelas pagas
+                                </Label>
+                                <div className='col-span-3'>
+                                    <Input
+                                        id='paidInstallments'
+                                        type='number'
+                                        min='0'
+                                        max={installments}
+                                        {...register('paidInstallments', {
+                                            valueAsNumber: true,
+                                        })}
+                                    />
+                                    {errors.paidInstallments && (
+                                        <span className='text-red-500 text-xs'>
+                                            {errors.paidInstallments.message}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         <div className='grid grid-cols-4 items-center gap-4 border-b pb-4'>
                             <Label htmlFor='installmentAmount' className='text-right'>
                                 Valor da Parcela
@@ -204,6 +284,7 @@ export function AddDebtModal({
                                                     const parts = raw.split(',');
                                                     const sanitized = parts.length > 2 ? parts[0] + ',' + parts.slice(1).join('') : raw;
                                                     setInstallmentAmountDisplay(sanitized);
+                                                    setInstallmentTouched(true);
                                                     const numeric = parseFloat(sanitized.replace(',', '.'));
                                                     field.onChange(isNaN(numeric) ? 0 : numeric);
                                                 }}
@@ -231,7 +312,7 @@ export function AddDebtModal({
                                     render={({ field }) => (
                                         <Select
                                             onValueChange={field.onChange}
-                                            defaultValue={field.value}
+                                            value={field.value}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue placeholder='Selecione o status' />
@@ -271,8 +352,8 @@ export function AddDebtModal({
                     </div>
 
                     <DialogFooter>
-                        <Button type='submit' disabled={isAdding}>
-                            {isAdding ? 'Salvando...' : 'Salvar'}
+                        <Button type='submit' disabled={submitting}>
+                            {submitting ? 'Salvando...' : 'Salvar'}
                         </Button>
                     </DialogFooter>
                 </form>
