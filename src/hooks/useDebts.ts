@@ -70,13 +70,23 @@ export function useDebts() {
   const addMutation = useMutation({
     mutationFn: async (data: DebtFormValues) => {
       if (!user) throw new Error('User not authenticated');
+      // Build the doc explicitly so optional fields (cardId, paidInstallments)
+      // are only included when they actually have a value. Firestore rejects
+      // writes with `undefined` field values.
+      const docData: Record<string, unknown> = {
+        description: data.description,
+        totalAmount: data.totalAmount,
+        installments: data.installments,
+        installmentAmount: data.installmentAmount,
+        dueDate: data.dueDate,
+        status: data.status,
+        paidInstallments: 0,
+        createdAt: new Date().toISOString(),
+      };
+      if (data.cardId) docData.cardId = data.cardId;
       return addDoc(
         collection(db, 'users', user.id, 'accounts', accountType, 'debts'),
-        stripUndefined({
-          ...data,
-          paidInstallments: 0,
-          createdAt: new Date().toISOString(),
-        }),
+        docData,
       );
     },
     onMutate: async (newDebt) => {

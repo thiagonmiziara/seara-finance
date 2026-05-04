@@ -12,6 +12,14 @@ export default defineConfig({
         react(),
         VitePWA({
             registerType: 'autoUpdate',
+            // Force the new service worker to take over immediately so users
+            // get the latest bundle on the next reload, instead of being
+            // stuck on a stale build until every tab is closed.
+            workbox: {
+                skipWaiting: true,
+                clientsClaim: true,
+                cleanupOutdatedCaches: true,
+            },
             includeAssets: ['favicon.ico', 'pwa-192x192.png', 'pwa-512x512.png', 'apple-touch-icon.png'],
             manifest: {
                 name: 'Seara Finance',
