@@ -11,6 +11,7 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestore';
 import { useAuth } from './useAuth';
 import { useAccount } from './useAccount';
 import { RecurringBill, RecurringBillFormValues } from '@/types';
@@ -70,10 +71,10 @@ export function useRecurringBills() {
           accountType,
           'recurringBills',
         ),
-        {
+        stripUndefined({
           ...data,
           createdAt: new Date().toISOString(),
-        },
+        }),
       );
     },
   });
@@ -97,7 +98,7 @@ export function useRecurringBills() {
           'recurringBills',
           id,
         ),
-        data,
+        stripUndefined(data),
       );
     },
     onMutate: async ({ id, data }) => {

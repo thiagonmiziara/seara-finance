@@ -12,6 +12,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestore';
 import { useAuth } from './useAuth';
 import { useAccount } from './useAccount';
 import { useCategories } from './useCategories';
@@ -197,10 +198,10 @@ export function useFinance(filter?: DateRange) {
           accountType,
           'transactions',
         ),
-        {
+        stripUndefined({
           ...restData,
           createdAt: new Date().toISOString(),
-        },
+        }),
       );
     },
     onMutate: async (newT) => {
