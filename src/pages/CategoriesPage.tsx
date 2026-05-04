@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { cn } from '@/lib/utils';
 
 const COLOR_PALETTE = [
@@ -166,18 +167,20 @@ export default function CategoriesPage() {
                     padrão
                   </span>
                 ) : (
-                  <button
-                    type='button'
-                    onClick={() => {
-                      if (confirm(`Excluir a categoria "${cat.label}"?`)) {
-                        deleteCategory(cat.value);
-                      }
-                    }}
-                    className='p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors'
-                    aria-label={`Excluir ${cat.label}`}
-                  >
-                    <Trash2 className='h-4 w-4' />
-                  </button>
+                  <ConfirmDialog
+                    trigger={
+                      <button
+                        type='button'
+                        className='p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors'
+                        aria-label={`Excluir ${cat.label}`}
+                      >
+                        <Trash2 className='h-4 w-4' />
+                      </button>
+                    }
+                    title='Excluir categoria?'
+                    description={`A categoria "${cat.label}" será removida. Transações que usam essa categoria continuarão existindo, mas perderão a etiqueta.`}
+                    onConfirm={() => deleteCategory(cat.value)}
+                  />
                 )}
               </li>
             );
