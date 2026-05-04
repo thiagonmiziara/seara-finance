@@ -96,14 +96,21 @@ describe('TransactionTable', () => {
     expect(screen.getAllByText('11/02/2026').length).toBeGreaterThan(0);
   });
 
-  it('calls onDelete when delete button is clicked', () => {
+  it('opens confirmation dialog and calls onDelete when confirmed', async () => {
     const onDeleteMock = vi.fn();
     render(
       <TransactionTable data={mockTransactions} onDelete={onDeleteMock} />,
     );
 
-    const deleteButtons = screen.getAllByRole('button', { name: /delete/i });
-    fireEvent.click(deleteButtons[0]);
+    // Click the trash icon trigger (now opens a ConfirmDialog instead of deleting directly)
+    const deleteTriggers = screen.getAllByRole('button', {
+      name: /excluir transação/i,
+    });
+    fireEvent.click(deleteTriggers[0]);
+
+    // The confirm button inside the dialog
+    const confirmBtn = await screen.findByRole('button', { name: /^excluir$/i });
+    fireEvent.click(confirmBtn);
 
     expect(onDeleteMock).toHaveBeenCalledWith('1');
   });

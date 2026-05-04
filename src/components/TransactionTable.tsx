@@ -34,6 +34,7 @@ import {
 import { Transaction } from '@/types';
 import { CATEGORIES as STATIC_CATEGORIES } from '@/lib/categories';
 import { useCategories } from '@/hooks/useCategories';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 
 interface TransactionTableProps {
   data: Transaction[];
@@ -217,21 +218,28 @@ export function TransactionTable({
         if (transaction.isProjected) return null;
 
         return (
-          <Button
-            variant='ghost'
-            className='h-8 w-8 p-0'
-            onClick={async () => {
+          <ConfirmDialog
+            trigger={
+              <Button
+                variant='ghost'
+                className='h-8 w-8 p-0'
+                disabled={isDeleting && deletingId === transaction.id}
+              >
+                <span className='sr-only'>Excluir transação</span>
+                <Trash
+                  className={`h-4 w-4 text-red-500 ${isDeleting && deletingId === transaction.id ? 'animate-pulse opacity-50' : ''}`}
+                />
+              </Button>
+            }
+            title='Excluir transação?'
+            description={`A transação "${transaction.description}" será removida permanentemente.`}
+            onConfirm={async () => {
               setDeletingId(transaction.id);
               await onDelete(transaction.id);
               setDeletingId(null);
             }}
-            disabled={isDeleting && deletingId === transaction.id}
-          >
-            <span className='sr-only'>Delete</span>
-            <Trash
-              className={`h-4 w-4 text-red-500 ${isDeleting && deletingId === transaction.id ? 'animate-pulse opacity-50' : ''}`}
-            />
-          </Button>
+            isLoading={isDeleting && deletingId === transaction.id}
+          />
         );
       },
     },
@@ -494,21 +502,29 @@ export function TransactionTable({
                     </p>
                   </div>
                   {!transaction.isProjected && (
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      className='h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors'
-                      onClick={async () => {
+                    <ConfirmDialog
+                      trigger={
+                        <Button
+                          variant='ghost'
+                          size='icon'
+                          className='h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors'
+                          disabled={isDeleting && deletingId === transaction.id}
+                          aria-label='Excluir transação'
+                        >
+                          <Trash
+                            className={`h-4 w-4 ${isDeleting && deletingId === transaction.id ? 'animate-pulse' : ''}`}
+                          />
+                        </Button>
+                      }
+                      title='Excluir transação?'
+                      description={`A transação "${transaction.description}" será removida permanentemente.`}
+                      onConfirm={async () => {
                         setDeletingId(transaction.id);
                         await onDelete(transaction.id);
                         setDeletingId(null);
                       }}
-                      disabled={isDeleting && deletingId === transaction.id}
-                    >
-                      <Trash
-                        className={`h-4 w-4 ${isDeleting && deletingId === transaction.id ? 'animate-pulse' : ''}`}
-                      />
-                    </Button>
+                      isLoading={isDeleting && deletingId === transaction.id}
+                    />
                   )}
                 </div>
 
