@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { db } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestore';
 import { useAuth } from './useAuth';
 import { useAccount } from './useAccount';
 import { CreditCard, CreditCardFormValues } from '@/types';
@@ -62,10 +63,10 @@ export function useCards() {
         mutationFn: async (data: CreditCardFormValues) => {
             if (!user) throw new Error('User not authenticated');
             const newCardRef = doc(collection(db, 'users', user.id, 'accounts', accountType, 'cards'));
-            await setDoc(newCardRef, {
+            await setDoc(newCardRef, stripUndefined({
                 ...data,
                 createdAt: new Date().toISOString(),
-            });
+            }));
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey });
@@ -75,7 +76,7 @@ export function useCards() {
     const updateMutation = useMutation({
         mutationFn: async ({ id, data }: { id: string; data: Partial<CreditCardFormValues> }) => {
             if (!user) throw new Error('User not authenticated');
-            await updateDoc(doc(db, 'users', user.id, 'accounts', accountType, 'cards', id), data);
+            await updateDoc(doc(db, 'users', user.id, 'accounts', accountType, 'cards', id), stripUndefined(data));
         },
         onSettled: () => {
             queryClient.invalidateQueries({ queryKey });

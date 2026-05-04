@@ -11,6 +11,7 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestore';
 import { useAuth } from './useAuth';
 import { useAccount } from './useAccount';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -71,11 +72,11 @@ export function useDebts() {
       if (!user) throw new Error('User not authenticated');
       return addDoc(
         collection(db, 'users', user.id, 'accounts', accountType, 'debts'),
-        {
+        stripUndefined({
           ...data,
           paidInstallments: 0,
           createdAt: new Date().toISOString(),
-        },
+        }),
       );
     },
     onMutate: async (newDebt) => {
@@ -114,7 +115,7 @@ export function useDebts() {
       if (!user) throw new Error('User not authenticated');
       return updateDoc(
         doc(db, 'users', user.id, 'accounts', accountType, 'debts', id),
-        data,
+        stripUndefined(data),
       );
     },
     onMutate: async ({ id, data }) => {
