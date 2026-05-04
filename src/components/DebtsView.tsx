@@ -4,6 +4,7 @@ import { AddDebtModal } from '@/components/AddDebtModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AnimatedCurrency } from '@/components/ui/animated-currency';
 import {
   Wallet,
   CheckCircle2,
@@ -32,9 +33,10 @@ interface KpiCardProps {
   tone: 'neutral' | 'success' | 'danger' | 'warning';
   icon: React.ComponentType<{ className?: string }>;
   hint?: string;
+  isLoading?: boolean;
 }
 
-function KpiCard({ label, value, tone, icon: Icon, hint }: KpiCardProps) {
+function KpiCard({ label, value, tone, icon: Icon, hint, isLoading }: KpiCardProps) {
   const toneStyles = {
     neutral: {
       iconWrap: 'bg-muted text-muted-foreground',
@@ -69,14 +71,14 @@ function KpiCard({ label, value, tone, icon: Icon, hint }: KpiCardProps) {
           <Icon className='h-4 w-4' />
         </span>
       </div>
-      <div
+      <AnimatedCurrency
+        value={value}
+        isLoading={isLoading}
         className={cn(
-          'mt-2 text-2xl font-extrabold tabular-nums tracking-tight',
+          'mt-2 block text-2xl font-extrabold tabular-nums tracking-tight',
           toneStyles.value,
         )}
-      >
-        {fmtBRL(value)}
-      </div>
+      />
       {hint && (
         <div className='mt-1 text-[11px] text-muted-foreground'>{hint}</div>
       )}
@@ -326,42 +328,37 @@ export default function DebtsView() {
       </div>
 
       {/* KPIs */}
-      {isInitialLoading ? (
-        <div className='grid gap-3 grid-cols-2 md:grid-cols-4'>
-          <Skeleton className='h-[110px] rounded-2xl' />
-          <Skeleton className='h-[110px] rounded-2xl' />
-          <Skeleton className='h-[110px] rounded-2xl' />
-          <Skeleton className='h-[110px] rounded-2xl' />
-        </div>
-      ) : (
-        <div className='grid gap-3 grid-cols-2 md:grid-cols-4'>
-          <KpiCard
-            label='Parcelas do mês'
-            value={summary.monthlyPayment}
-            tone='warning'
-            icon={CalendarClock}
-            hint='Soma das parcelas das dívidas em aberto'
-          />
-          <KpiCard
-            label='Total contratado'
-            value={summary.total}
-            tone='neutral'
-            icon={Wallet}
-          />
-          <KpiCard
-            label='Restante a pagar'
-            value={summary.remaining}
-            tone='danger'
-            icon={AlertCircle}
-          />
-          <KpiCard
-            label='Já quitado'
-            value={summary.paid}
-            tone='success'
-            icon={CheckCircle2}
-          />
-        </div>
-      )}
+      <div className='grid gap-3 grid-cols-2 md:grid-cols-4'>
+        <KpiCard
+          label='Parcelas do mês'
+          value={summary.monthlyPayment}
+          tone='warning'
+          icon={CalendarClock}
+          hint='Soma das parcelas das dívidas em aberto'
+          isLoading={isInitialLoading}
+        />
+        <KpiCard
+          label='Total contratado'
+          value={summary.total}
+          tone='neutral'
+          icon={Wallet}
+          isLoading={isInitialLoading}
+        />
+        <KpiCard
+          label='Restante a pagar'
+          value={summary.remaining}
+          tone='danger'
+          icon={AlertCircle}
+          isLoading={isInitialLoading}
+        />
+        <KpiCard
+          label='Já quitado'
+          value={summary.paid}
+          tone='success'
+          icon={CheckCircle2}
+          isLoading={isInitialLoading}
+        />
+      </div>
 
       {/* List */}
       {isInitialLoading ? (
