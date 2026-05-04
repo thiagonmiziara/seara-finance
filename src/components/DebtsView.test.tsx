@@ -17,7 +17,7 @@ describe('DebtsView', () => {
       removeDebt: vi.fn(),
       incrementInstallment: vi.fn(),
       settleDebt: vi.fn(),
-      summary: { total: 0, remaining: 0, paid: 0 },
+      summary: { total: 0, remaining: 0, paid: 0, monthlyPayment: 0 },
       isAdding: false,
       isDeleting: false,
       isInitialLoading: false,

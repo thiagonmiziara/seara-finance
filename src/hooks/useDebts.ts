@@ -195,16 +195,20 @@ export function useDebts() {
   const summary = useMemo(() => {
     return debts.reduce(
       (acc, d) => {
-        const paidAmount = (d.paidInstallments || 0) * d.installmentAmount;
+        const paidInstallments = d.paidInstallments || 0;
+        const paidAmount = paidInstallments * d.installmentAmount;
         const remainingAmount = d.totalAmount - paidAmount;
+        const isActive =
+          d.status !== 'pago' && paidInstallments < d.installments;
 
         acc.total += d.totalAmount;
         acc.paid += paidAmount;
         acc.remaining += remainingAmount;
+        if (isActive) acc.monthlyPayment += d.installmentAmount;
 
         return acc;
       },
-      { total: 0, paid: 0, remaining: 0 },
+      { total: 0, paid: 0, remaining: 0, monthlyPayment: 0 },
     );
   }, [debts]);
 

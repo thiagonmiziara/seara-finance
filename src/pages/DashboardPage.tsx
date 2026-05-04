@@ -17,6 +17,7 @@ import { useFinance } from '@/hooks/useFinance';
 import { useProjectedTransactions } from '@/hooks/useProjectedTransactions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { AnimatedCurrency } from '@/components/ui/animated-currency';
 import { FlowChart } from '@/components/FlowChart';
 import { CategoryDonut } from '@/components/CategoryDonut';
 import { ScorePanel } from '@/components/ScorePanel';
@@ -164,33 +165,35 @@ export default function DashboardPage() {
                   {hideValue ? <EyeOff className='h-3.5 w-3.5' /> : <Eye className='h-3.5 w-3.5' />}
                 </button>
               </div>
-              {isInitialLoading ? (
-                <Skeleton className='h-12 w-56 mt-3' />
-              ) : (
-                <div className='mt-2 flex items-end gap-3 flex-wrap'>
-                  <span
+              <div className='mt-2 flex items-end gap-3 flex-wrap'>
+                {hideValue ? (
+                  <span className='text-4xl sm:text-5xl font-extrabold tabular-nums tracking-tight leading-none text-foreground'>
+                    ••••••
+                  </span>
+                ) : (
+                  <AnimatedCurrency
+                    value={summary.balance}
+                    isLoading={isInitialLoading}
                     className={cn(
                       'text-4xl sm:text-5xl font-extrabold tabular-nums tracking-tight leading-none',
                       summary.balance >= 0 ? 'text-foreground' : 'text-red-500',
                     )}
+                  />
+                )}
+                {delta !== null && !isInitialLoading && (
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                      delta >= 0
+                        ? 'bg-primary/15 text-primary'
+                        : 'bg-red-500/15 text-red-600 dark:text-red-400',
+                    )}
                   >
-                    {hideValue ? '••••••' : formatCurrency(summary.balance)}
+                    {delta >= 0 ? '↑' : '↓'} {delta >= 0 ? '+' : ''}
+                    {delta.toFixed(1)}% vs mês passado
                   </span>
-                  {delta !== null && (
-                    <span
-                      className={cn(
-                        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold',
-                        delta >= 0
-                          ? 'bg-primary/15 text-primary'
-                          : 'bg-red-500/15 text-red-600 dark:text-red-400',
-                      )}
-                    >
-                      {delta >= 0 ? '↑' : '↓'} {delta >= 0 ? '+' : ''}
-                      {delta.toFixed(1)}% vs mês passado
-                    </span>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
 
@@ -205,7 +208,15 @@ export default function DashboardPage() {
                 Receitas
               </div>
               <div className='mt-1 text-2xl font-extrabold tabular-nums text-primary truncate'>
-                {hideValue ? '••••' : formatShort(summary.income)}
+                {hideValue ? (
+                  '••••'
+                ) : (
+                  <AnimatedCurrency
+                    value={summary.income}
+                    isLoading={isInitialLoading}
+                    formatter={formatShort}
+                  />
+                )}
               </div>
             </div>
             <div>
@@ -216,7 +227,15 @@ export default function DashboardPage() {
                 Despesas
               </div>
               <div className='mt-1 text-2xl font-extrabold tabular-nums text-red-500 truncate'>
-                {hideValue ? '••••' : formatShort(summary.expense)}
+                {hideValue ? (
+                  '••••'
+                ) : (
+                  <AnimatedCurrency
+                    value={summary.expense}
+                    isLoading={isInitialLoading}
+                    formatter={formatShort}
+                  />
+                )}
               </div>
             </div>
           </div>

@@ -4,10 +4,12 @@ import { AddDebtModal } from '@/components/AddDebtModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AnimatedCurrency } from '@/components/ui/animated-currency';
 import {
   Wallet,
   CheckCircle2,
   AlertCircle,
+  CalendarClock,
   Trash2,
   Check,
   CheckCheck,
@@ -16,7 +18,7 @@ import {
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { Debt } from '@/types';
+import { Debt, DebtFormValues } from '@/types';
 
 function fmtBRL(value: number) {
   return new Intl.NumberFormat('pt-BR', {
@@ -28,11 +30,13 @@ function fmtBRL(value: number) {
 interface KpiCardProps {
   label: string;
   value: number;
-  tone: 'neutral' | 'success' | 'danger';
+  tone: 'neutral' | 'success' | 'danger' | 'warning';
   icon: React.ComponentType<{ className?: string }>;
+  hint?: string;
+  isLoading?: boolean;
 }
 
-function KpiCard({ label, value, tone, icon: Icon }: KpiCardProps) {
+function KpiCard({ label, value, tone, icon: Icon, hint, isLoading }: KpiCardProps) {
   const toneStyles = {
     neutral: {
       iconWrap: 'bg-muted text-muted-foreground',
@@ -45,6 +49,10 @@ function KpiCard({ label, value, tone, icon: Icon }: KpiCardProps) {
     danger: {
       iconWrap: 'bg-red-500/15 text-red-500',
       value: 'text-red-500',
+    },
+    warning: {
+      iconWrap: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+      value: 'text-amber-600 dark:text-amber-400',
     },
   }[tone];
 
@@ -63,14 +71,17 @@ function KpiCard({ label, value, tone, icon: Icon }: KpiCardProps) {
           <Icon className='h-4 w-4' />
         </span>
       </div>
-      <div
+      <AnimatedCurrency
+        value={value}
+        isLoading={isLoading}
         className={cn(
-          'mt-2 text-2xl font-extrabold tabular-nums tracking-tight',
+          'mt-2 block text-2xl font-extrabold tabular-nums tracking-tight',
           toneStyles.value,
         )}
-      >
-        {fmtBRL(value)}
-      </div>
+      />
+      {hint && (
+        <div className='mt-1 text-[11px] text-muted-foreground'>{hint}</div>
+      )}
     </div>
   );
 }
@@ -81,7 +92,9 @@ interface DebtCardProps {
   onIncrement: () => Promise<any>;
   onSettle: () => Promise<any>;
   onDelete: () => Promise<any>;
+  onUpdate: (vars: { id: string; data: Partial<DebtFormValues> }) => Promise<any>;
   isDeleting?: boolean;
+  isUpdating?: boolean;
 }
 
 function DebtCard({
@@ -90,7 +103,9 @@ function DebtCard({
   onIncrement,
   onSettle,
   onDelete,
+  onUpdate,
   isDeleting,
+  isUpdating,
 }: DebtCardProps) {
   const passed =
     debt.status === 'pago'
@@ -150,21 +165,28 @@ function DebtCard({
           </p>
         </div>
 
-        <ConfirmDialog
-          trigger={
-            <button
-              type='button'
-              className='shrink-0 -mr-1 -mt-1 inline-flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors'
-              aria-label={`Excluir dívida ${debt.description}`}
-            >
-              <Trash2 className='h-4 w-4' />
-            </button>
-          }
-          title='Excluir dívida?'
-          description={`A dívida "${debt.description}" será removida permanentemente.`}
-          onConfirm={onDelete}
-          isLoading={isDeleting}
-        />
+        <div className='shrink-0 -mr-1 -mt-1 flex items-center gap-0.5'>
+          <AddDebtModal
+            debt={debt}
+            onUpdateDebt={onUpdate}
+            isUpdating={isUpdating}
+          />
+          <ConfirmDialog
+            trigger={
+              <button
+                type='button'
+                className='inline-flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors'
+                aria-label={`Excluir dívida ${debt.description}`}
+              >
+                <Trash2 className='h-4 w-4' />
+              </button>
+            }
+            title='Excluir dívida?'
+            description={`A dívida "${debt.description}" será removida permanentemente.`}
+            onConfirm={onDelete}
+            isLoading={isDeleting}
+          />
+        </div>
       </div>
 
       {/* Stats grid */}
@@ -275,11 +297,13 @@ export default function DebtsView() {
   const {
     debts,
     addDebt,
+    updateDebt,
     removeDebt,
     incrementInstallment,
     settleDebt,
     summary,
     isAdding,
+    isUpdating,
     isDeleting,
     isInitialLoading,
   } = useDebts();
@@ -304,34 +328,37 @@ export default function DebtsView() {
       </div>
 
       {/* KPIs */}
-      {isInitialLoading ? (
-        <div className='grid gap-3 grid-cols-1 md:grid-cols-3'>
-          <Skeleton className='h-[100px] rounded-2xl' />
-          <Skeleton className='h-[100px] rounded-2xl' />
-          <Skeleton className='h-[100px] rounded-2xl' />
-        </div>
-      ) : (
-        <div className='grid gap-3 grid-cols-1 md:grid-cols-3'>
-          <KpiCard
-            label='Total contratado'
-            value={summary.total}
-            tone='neutral'
-            icon={Wallet}
-          />
-          <KpiCard
-            label='Restante a pagar'
-            value={summary.remaining}
-            tone='danger'
-            icon={AlertCircle}
-          />
-          <KpiCard
-            label='Já quitado'
-            value={summary.paid}
-            tone='success'
-            icon={CheckCircle2}
-          />
-        </div>
-      )}
+      <div className='grid gap-3 grid-cols-2 md:grid-cols-4'>
+        <KpiCard
+          label='Parcelas do mês'
+          value={summary.monthlyPayment}
+          tone='warning'
+          icon={CalendarClock}
+          hint='Soma das parcelas das dívidas em aberto'
+          isLoading={isInitialLoading}
+        />
+        <KpiCard
+          label='Total contratado'
+          value={summary.total}
+          tone='neutral'
+          icon={Wallet}
+          isLoading={isInitialLoading}
+        />
+        <KpiCard
+          label='Restante a pagar'
+          value={summary.remaining}
+          tone='danger'
+          icon={AlertCircle}
+          isLoading={isInitialLoading}
+        />
+        <KpiCard
+          label='Já quitado'
+          value={summary.paid}
+          tone='success'
+          icon={CheckCircle2}
+          isLoading={isInitialLoading}
+        />
+      </div>
 
       {/* List */}
       {isInitialLoading ? (
@@ -353,7 +380,9 @@ export default function DebtsView() {
               onIncrement={() => incrementInstallment(debt)}
               onSettle={() => settleDebt(debt)}
               onDelete={() => removeDebt(debt.id)}
+              onUpdate={updateDebt}
               isDeleting={isDeleting}
+              isUpdating={isUpdating}
             />
           ))}
         </div>
