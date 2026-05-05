@@ -11,7 +11,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { ArrowUpDown, Trash } from 'lucide-react';
+import { ArrowUpDown, Check, RotateCcw, Trash } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,13 +39,34 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 interface TransactionTableProps {
   data: Transaction[];
   onDelete: (id: string) => void;
+  onUpdateStatus?: (args: {
+    id: string;
+    status: Transaction['status'];
+  }) => Promise<unknown> | void;
   isDeleting?: boolean;
+  isUpdatingStatus?: boolean;
+}
+
+const SETTLED_STATUSES: Transaction['status'][] = ['pago', 'recebido'];
+
+function nextStatusFor(t: Transaction): Transaction['status'] | null {
+  // Toggle pending <-> settled along the right axis (expense vs income)
+  if (t.type === 'expense') {
+    if (t.status === 'a_pagar') return 'pago';
+    if (t.status === 'pago') return 'a_pagar';
+  } else {
+    if (t.status === 'a_receber') return 'recebido';
+    if (t.status === 'recebido') return 'a_receber';
+  }
+  return null;
 }
 
 export function TransactionTable({
   data,
   onDelete,
+  onUpdateStatus,
   isDeleting,
+  isUpdatingStatus,
 }: TransactionTableProps) {
   const { categories } = useCategories();
   const statusConfig: Record<
@@ -217,29 +238,58 @@ export function TransactionTable({
 
         if (transaction.isProjected) return null;
 
+        const next = nextStatusFor(transaction);
+        const isSettled = SETTLED_STATUSES.includes(transaction.status);
+        const toggleLabel = isSettled
+          ? transaction.type === 'income'
+            ? 'Desfazer recebimento'
+            : 'Desfazer pagamento'
+          : transaction.type === 'income'
+            ? 'Marcar como recebido'
+            : 'Marcar como pago';
+
         return (
-          <ConfirmDialog
-            trigger={
+          <div className='flex items-center justify-end gap-1'>
+            {next && onUpdateStatus && (
               <Button
                 variant='ghost'
-                className='h-8 w-8 p-0'
-                disabled={isDeleting && deletingId === transaction.id}
+                size='icon'
+                className={`h-8 w-8 ${isSettled ? 'text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10' : 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10'}`}
+                disabled={isUpdatingStatus}
+                aria-label={toggleLabel}
+                title={toggleLabel}
+                onClick={() => onUpdateStatus({ id: transaction.id, status: next })}
               >
-                <span className='sr-only'>Excluir transação</span>
-                <Trash
-                  className={`h-4 w-4 text-red-500 ${isDeleting && deletingId === transaction.id ? 'animate-pulse opacity-50' : ''}`}
-                />
+                {isSettled ? (
+                  <RotateCcw className='h-4 w-4' />
+                ) : (
+                  <Check className='h-4 w-4' />
+                )}
               </Button>
-            }
-            title='Excluir transação?'
-            description={`A transação "${transaction.description}" será removida permanentemente.`}
-            onConfirm={async () => {
-              setDeletingId(transaction.id);
-              await onDelete(transaction.id);
-              setDeletingId(null);
-            }}
-            isLoading={isDeleting && deletingId === transaction.id}
-          />
+            )}
+            <ConfirmDialog
+              trigger={
+                <Button
+                  variant='ghost'
+                  className='h-8 w-8 p-0'
+                  disabled={isDeleting && deletingId === transaction.id}
+                >
+                  <span className='sr-only'>Excluir transação</span>
+                  <Trash
+                    className={`h-4 w-4 text-red-500 ${isDeleting && deletingId === transaction.id ? 'animate-pulse opacity-50' : ''}`}
+                  />
+                </Button>
+              }
+              title='Excluir transação?'
+              description={`A transação "${transaction.description}" será removida permanentemente.`}
+              onConfirm={async () => {
+                setDeletingId(transaction.id);
+                await onDelete(transaction.id);
+                setDeletingId(null);
+              }}
+              isLoading={isDeleting && deletingId === transaction.id}
+            />
+          </div>
         );
       },
     },
@@ -502,29 +552,67 @@ export function TransactionTable({
                     </p>
                   </div>
                   {!transaction.isProjected && (
-                    <ConfirmDialog
-                      trigger={
-                        <Button
-                          variant='ghost'
-                          size='icon'
-                          className='h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors'
-                          disabled={isDeleting && deletingId === transaction.id}
-                          aria-label='Excluir transação'
-                        >
-                          <Trash
-                            className={`h-4 w-4 ${isDeleting && deletingId === transaction.id ? 'animate-pulse' : ''}`}
-                          />
-                        </Button>
-                      }
-                      title='Excluir transação?'
-                      description={`A transação "${transaction.description}" será removida permanentemente.`}
-                      onConfirm={async () => {
-                        setDeletingId(transaction.id);
-                        await onDelete(transaction.id);
-                        setDeletingId(null);
-                      }}
-                      isLoading={isDeleting && deletingId === transaction.id}
-                    />
+                    <div className='flex items-center gap-1'>
+                      {(() => {
+                        const next = nextStatusFor(transaction);
+                        if (!next || !onUpdateStatus) return null;
+                        const isSettled = SETTLED_STATUSES.includes(
+                          transaction.status,
+                        );
+                        const toggleLabel = isSettled
+                          ? transaction.type === 'income'
+                            ? 'Desfazer recebimento'
+                            : 'Desfazer pagamento'
+                          : transaction.type === 'income'
+                            ? 'Marcar como recebido'
+                            : 'Marcar como pago';
+                        return (
+                          <Button
+                            variant='ghost'
+                            size='icon'
+                            className={`h-8 w-8 ${isSettled ? 'text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10' : 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10'}`}
+                            disabled={isUpdatingStatus}
+                            aria-label={toggleLabel}
+                            title={toggleLabel}
+                            onClick={() =>
+                              onUpdateStatus({
+                                id: transaction.id,
+                                status: next,
+                              })
+                            }
+                          >
+                            {isSettled ? (
+                              <RotateCcw className='h-4 w-4' />
+                            ) : (
+                              <Check className='h-4 w-4' />
+                            )}
+                          </Button>
+                        );
+                      })()}
+                      <ConfirmDialog
+                        trigger={
+                          <Button
+                            variant='ghost'
+                            size='icon'
+                            className='h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors'
+                            disabled={isDeleting && deletingId === transaction.id}
+                            aria-label='Excluir transação'
+                          >
+                            <Trash
+                              className={`h-4 w-4 ${isDeleting && deletingId === transaction.id ? 'animate-pulse' : ''}`}
+                            />
+                          </Button>
+                        }
+                        title='Excluir transação?'
+                        description={`A transação "${transaction.description}" será removida permanentemente.`}
+                        onConfirm={async () => {
+                          setDeletingId(transaction.id);
+                          await onDelete(transaction.id);
+                          setDeletingId(null);
+                        }}
+                        isLoading={isDeleting && deletingId === transaction.id}
+                      />
+                    </div>
                   )}
                 </div>
 

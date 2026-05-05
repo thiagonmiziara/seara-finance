@@ -9,6 +9,7 @@ import {
   onSnapshot,
   query,
   orderBy,
+  updateDoc,
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -330,6 +331,36 @@ export function useFinance(filter?: DateRange) {
     },
   });
 
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({
+      id,
+      status,
+    }: {
+      id: string;
+      status: Transaction['status'];
+    }) => {
+      if (!user) throw new Error('User not authenticated');
+      return updateDoc(
+        doc(db, 'users', user.id, 'accounts', accountType, 'transactions', id),
+        { status },
+      );
+    },
+    onMutate: async ({ id, status }) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previousTransactions =
+        queryClient.getQueryData<Transaction[]>(queryKey);
+      queryClient.setQueryData(queryKey, (old: Transaction[] = []) =>
+        old.map((t) => (t.id === id ? { ...t, status } : t)),
+      );
+      return { previousTransactions };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousTransactions) {
+        queryClient.setQueryData(queryKey, context.previousTransactions);
+      }
+    },
+  });
+
   const payInvoiceMonthMutation = useMutation({
     mutationFn: async ({
       transactionIds,
@@ -552,11 +583,13 @@ export function useFinance(filter?: DateRange) {
     addTransactionsBatch: addTransactionsBatchMutation.mutateAsync,
     addTransfer: addTransferMutation.mutateAsync,
     removeTransaction: deleteMutation.mutateAsync,
+    updateTransactionStatus: updateStatusMutation.mutateAsync,
     payInvoiceMonth: payInvoiceMonthMutation.mutateAsync,
     exportToCSV,
     summary,
     isAdding: addMutation.isPending || addTransactionsBatchMutation.isPending || addTransferMutation.isPending,
     isDeleting: deleteMutation.isPending,
+    isUpdatingStatus: updateStatusMutation.isPending,
     isPayingInvoice: payInvoiceMonthMutation.isPending,
     isInitialLoading: isPending && user !== null,
     isLoading:
