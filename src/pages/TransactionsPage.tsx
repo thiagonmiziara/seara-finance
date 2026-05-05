@@ -26,9 +26,11 @@ export default function TransactionsPage() {
     addTransactionsBatch,
     addTransfer,
     removeTransaction,
+    updateTransactionStatus,
     exportToCSV: rawExportToCSV,
     isAdding,
     isDeleting,
+    isUpdatingStatus,
     isInitialLoading,
   } = useFinance(dateRange);
   const projected = useProjectedTransactions(
@@ -148,7 +150,9 @@ export default function TransactionsPage() {
           <TransactionTable
             data={transactions}
             onDelete={removeTransaction}
+            onUpdateStatus={updateTransactionStatus}
             isDeleting={isDeleting}
+            isUpdatingStatus={isUpdatingStatus}
           />
         )}
       </section>

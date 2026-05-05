@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { useMigration } from '@/hooks/useMigration';
 import { useRecurringBillsSync } from '@/hooks/useRecurringBillsSync';
 import { WhatsAppOnboardingModal } from '@/components/WhatsAppOnboardingModal';
+import { DueDebtsReminderModal } from '@/components/DueDebtsReminderModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { NavigationProvider, useNavigation } from './navigation';
 import { PeriodProvider } from './period-context';
@@ -34,6 +35,7 @@ function ShellContent() {
   return (
     <div className='min-h-screen bg-background'>
       <WhatsAppOnboardingModal />
+      <DueDebtsReminderModal />
       <div className='flex'>
         <Sidebar />
 

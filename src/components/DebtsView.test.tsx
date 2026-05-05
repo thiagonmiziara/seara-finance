@@ -6,6 +6,16 @@ import * as useCardsHook from '@/hooks/useCards';
 
 vi.mock('@/hooks/useDebts');
 vi.mock('@/hooks/useCards');
+vi.mock('@/components/layout/period-context', () => ({
+  usePeriod: () => ({
+    period: 'current',
+    setPeriod: vi.fn(),
+    customRange: { from: '2026-05-01', to: '2026-05-31' },
+    setCustomRange: vi.fn(),
+    dateRange: { from: new Date('2026-05-01'), to: new Date('2026-05-31') },
+    selectedMonthLabel: 'Maio',
+  }),
+}));
 
 describe('DebtsView', () => {
   beforeEach(() => {
@@ -17,6 +27,7 @@ describe('DebtsView', () => {
       removeDebt: vi.fn(),
       incrementInstallment: vi.fn(),
       settleDebt: vi.fn(),
+      unmarkLastInstallment: vi.fn(async () => undefined),
       summary: { total: 0, remaining: 0, paid: 0, monthlyPayment: 0 },
       isAdding: false,
       isDeleting: false,

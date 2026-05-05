@@ -1,20 +1,26 @@
+import { useMemo } from 'react';
+import { format } from 'date-fns';
 import { useRecurringBills } from '@/hooks/useRecurringBills';
+import { useFinance } from '@/hooks/useFinance';
 import {
   NewRecurringBillButton,
   EditRecurringBillButton,
 } from '@/components/AddRecurringBillModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import { RecurringBill, RecurringBillFormValues } from '@/types';
+import { RecurringBill, RecurringBillFormValues, Transaction } from '@/types';
 import { CATEGORIES as STATIC_CATEGORIES } from '@/lib/categories';
 import { useCategories } from '@/hooks/useCategories';
 import {
   ArrowDownLeft,
   ArrowUpRight,
   CalendarClock,
+  Check,
+  RotateCcw,
   Trash2,
   Repeat,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 function fmtBRL(value: number) {
@@ -28,25 +34,35 @@ interface BillCardProps {
   bill: RecurringBill;
   categoryLabel: string;
   categoryColor: string;
+  monthTx?: Transaction;
+  monthLabel: string;
   onEdit: (data: RecurringBillFormValues) => Promise<any>;
   onToggle: () => Promise<any> | void;
   onRemove: () => Promise<any> | void;
+  onTogglePaid?: (tx: Transaction) => Promise<any> | void;
   isUpdating?: boolean;
   isDeleting?: boolean;
+  isUpdatingPaid?: boolean;
 }
 
 function BillCard({
   bill,
   categoryLabel,
   categoryColor,
+  monthTx,
+  monthLabel,
   onEdit,
   onToggle,
   onRemove,
+  onTogglePaid,
   isUpdating,
   isDeleting,
+  isUpdatingPaid,
 }: BillCardProps) {
   const isIncome = bill.type === 'income';
   const Icon = isIncome ? ArrowUpRight : ArrowDownLeft;
+  const isPaidThisMonth =
+    !!monthTx && (monthTx.status === 'pago' || monthTx.status === 'recebido');
 
   return (
     <div
@@ -107,6 +123,61 @@ function BillCard({
           /mês
         </span>
       </div>
+
+      {/* Monthly payment status */}
+      {bill.isActive && monthTx && onTogglePaid && (
+        <div className='mt-3 flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/30 px-3 py-2'>
+          <div className='min-w-0'>
+            <div className='text-[10px] font-bold uppercase tracking-widest text-muted-foreground'>
+              {monthLabel}
+            </div>
+            <span
+              className={cn(
+                'mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider',
+                isPaidThisMonth
+                  ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+              )}
+            >
+              {isPaidThisMonth
+                ? isIncome
+                  ? 'Recebido'
+                  : 'Pago'
+                : isIncome
+                  ? 'A receber'
+                  : 'Pendente'}
+            </span>
+          </div>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            disabled={isUpdatingPaid}
+            onClick={() => onTogglePaid(monthTx)}
+            className={cn(
+              'h-8 px-2 shrink-0',
+              isPaidThisMonth
+                ? 'text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10'
+                : 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10',
+            )}
+            aria-label={
+              isPaidThisMonth ? 'Desfazer pagamento' : 'Marcar como pago'
+            }
+          >
+            {isPaidThisMonth ? (
+              <>
+                <RotateCcw className='mr-1 h-3.5 w-3.5' />
+                Desfazer
+              </>
+            ) : (
+              <>
+                <Check className='mr-1 h-3.5 w-3.5' />
+                {isIncome ? 'Recebi' : 'Paguei'}
+              </>
+            )}
+          </Button>
+        </div>
+      )}
 
       {/* Footer: toggle + status + delete */}
       <div className='mt-4 pt-3 border-t border-border/60 flex items-center justify-between gap-2'>
@@ -185,8 +256,42 @@ export function RecurringBillsSummary() {
     isDeleting,
     isLoading,
   } = useRecurringBills();
+  const {
+    allTransactions,
+    updateTransactionStatus,
+    isUpdatingStatus,
+  } = useFinance();
   const { categories: dyn } = useCategories();
   const allCats = dyn.length > 0 ? dyn : STATIC_CATEGORIES;
+
+  const yearMonth = format(new Date(), 'yyyy-MM');
+  const monthLabel = `Mês ${format(new Date(), 'MM/yyyy')}`;
+
+  const monthTxByBillId = useMemo(() => {
+    const map = new Map<string, Transaction>();
+    for (const t of allTransactions) {
+      if (
+        !t.isProjected &&
+        t.recurringBillId &&
+        t.recurringYearMonth === yearMonth
+      ) {
+        map.set(t.recurringBillId, t);
+      }
+    }
+    return map;
+  }, [allTransactions, yearMonth]);
+
+  const handleTogglePaid = (tx: Transaction) => {
+    const isSettled = tx.status === 'pago' || tx.status === 'recebido';
+    const next: Transaction['status'] = isSettled
+      ? tx.type === 'income'
+        ? 'a_receber'
+        : 'a_pagar'
+      : tx.type === 'income'
+        ? 'recebido'
+        : 'pago';
+    return updateTransactionStatus({ id: tx.id, status: next });
+  };
 
   const activeCount = recurringBills.filter((b) => b.isActive).length;
   const totalNet = recurringBills
@@ -273,11 +378,15 @@ export function RecurringBillsSummary() {
                 bill={bill}
                 categoryLabel={cat?.label ?? bill.category}
                 categoryColor={cat?.color ?? '#64748b'}
+                monthTx={monthTxByBillId.get(bill.id)}
+                monthLabel={monthLabel}
                 onEdit={handleEdit(bill)}
                 onToggle={() => toggleActive(bill)}
                 onRemove={() => removeBill(bill.id)}
+                onTogglePaid={handleTogglePaid}
                 isUpdating={isUpdating}
                 isDeleting={isDeleting}
+                isUpdatingPaid={isUpdatingStatus}
               />
             );
           })}
