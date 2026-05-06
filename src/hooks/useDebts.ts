@@ -5,10 +5,12 @@ import {
   addDoc,
   deleteDoc,
   doc,
+  getDocs,
   updateDoc,
   onSnapshot,
   query,
   orderBy,
+  where,
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -16,7 +18,7 @@ import { stripUndefined } from '@/lib/firestore';
 import { useAuth } from './useAuth';
 import { useAccount } from './useAccount';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { addMonths, parseISO } from 'date-fns';
+import { addMonths, format, parseISO } from 'date-fns';
 
 function safeParse(value: string): Date | null {
   if (!value) return null;
@@ -258,78 +260,264 @@ export function useDebts() {
     },
   });
 
-  const incrementInstallment = async (debt: Debt) => {
-    const currentPaid = debt.paidInstallments || 0;
-    const newPaid = currentPaid + 1;
+  /**
+   * Find unpaid card-installment transactions for the given debt. Returns a
+   * map of installment number → transaction document id. Empty map if the
+   * debt has no card or no matching transactions exist (standalone debt).
+   */
+  const fetchLinkedCardTxByInstallment = async (
+    debt: Debt,
+  ): Promise<Map<number, string>> => {
+    const out = new Map<number, string>();
+    if (!user || !debt.cardId) return out;
+    const snap = await getDocs(
+      query(
+        collection(
+          db,
+          'users',
+          user.id,
+          'accounts',
+          accountType,
+          'transactions',
+        ),
+        where('cardId', '==', debt.cardId),
+      ),
+    );
+    for (const d of snap.docs) {
+      const data = d.data() as any;
+      if (
+        data.status === 'a_pagar' &&
+        data.installments?.current >= 1 &&
+        data.installments?.current <= debt.installments &&
+        data.installments?.total === debt.installments
+      ) {
+        out.set(data.installments.current, d.id);
+      }
+    }
+    return out;
+  };
 
-    let newStatus = debt.status;
-    if (newPaid >= debt.installments) {
-      newStatus = 'pago';
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey });
+    queryClient.invalidateQueries({
+      queryKey: ['transactions', user?.id, accountType],
+    });
+  };
+
+  const incrementInstallment = async (debt: Debt) => {
+    if (!user) throw new Error('User not authenticated');
+    const currentPaid = debt.paidInstallments || 0;
+    if (currentPaid >= debt.installments) return;
+    const newPaid = currentPaid + 1;
+    const newStatus: Debt['status'] =
+      newPaid >= debt.installments ? 'pago' : 'a_pagar';
+
+    const linkedByInst = await fetchLinkedCardTxByInstallment(debt);
+    const linkedTxId = linkedByInst.get(newPaid);
+
+    const batch = writeBatch(db);
+    const debtRef = doc(
+      db,
+      'users',
+      user.id,
+      'accounts',
+      accountType,
+      'debts',
+      debt.id,
+    );
+    const todayDate = new Date();
+    const todayIso = todayDate.toISOString();
+    const todayYmd = format(todayDate, 'yyyy-MM-dd');
+
+    let transactionId: string;
+    let createdTransaction = false;
+    if (linkedTxId) {
+      const txRef = doc(
+        db,
+        'users',
+        user.id,
+        'accounts',
+        accountType,
+        'transactions',
+        linkedTxId,
+      );
+      batch.update(txRef, { status: 'pago' });
+      transactionId = linkedTxId;
+    } else {
+      const newTxRef = doc(
+        collection(
+          db,
+          'users',
+          user.id,
+          'accounts',
+          accountType,
+          'transactions',
+        ),
+      );
+      batch.set(newTxRef, {
+        description: `${debt.description} — Parcela ${newPaid}/${debt.installments}`,
+        amount: debt.installmentAmount,
+        category: 'outros',
+        type: 'expense',
+        status: 'pago',
+        date: todayYmd,
+        createdAt: todayIso,
+      });
+      transactionId = newTxRef.id;
+      createdTransaction = true;
     }
 
     const history = debt.paymentHistory ?? [];
     const newEntry: DebtPayment = {
       installmentNumber: newPaid,
-      paidAt: new Date().toISOString(),
+      paidAt: todayIso,
       amount: debt.installmentAmount,
+      transactionId,
+      createdTransaction,
     };
-
-    return updateMutation.mutateAsync({
-      id: debt.id,
-      data: {
-        paidInstallments: newPaid,
-        status: newStatus,
-        paymentHistory: [...history, newEntry],
-      },
+    batch.update(debtRef, {
+      paidInstallments: newPaid,
+      status: newStatus,
+      paymentHistory: [...history, newEntry],
     });
+
+    await batch.commit();
+    invalidateAll();
   };
 
   const settleDebt = async (debt: Debt) => {
+    if (!user) throw new Error('User not authenticated');
     const currentPaid = debt.paidInstallments || 0;
-    const history = debt.paymentHistory ?? [];
-    const now = new Date().toISOString();
-    const remainingEntries: DebtPayment[] = [];
-    for (let i = currentPaid + 1; i <= debt.installments; i++) {
-      remainingEntries.push({
-        installmentNumber: i,
-        paidAt: now,
+    if (currentPaid >= debt.installments) return;
+
+    const linkedByInst = await fetchLinkedCardTxByInstallment(debt);
+
+    const batch = writeBatch(db);
+    const debtRef = doc(
+      db,
+      'users',
+      user.id,
+      'accounts',
+      accountType,
+      'debts',
+      debt.id,
+    );
+    const todayDate = new Date();
+    const todayIso = todayDate.toISOString();
+    const todayYmd = format(todayDate, 'yyyy-MM-dd');
+
+    const newEntries: DebtPayment[] = [];
+    for (let n = currentPaid + 1; n <= debt.installments; n++) {
+      let transactionId: string;
+      let createdTransaction = false;
+      const linkedTxId = linkedByInst.get(n);
+      if (linkedTxId) {
+        const txRef = doc(
+          db,
+          'users',
+          user.id,
+          'accounts',
+          accountType,
+          'transactions',
+          linkedTxId,
+        );
+        batch.update(txRef, { status: 'pago' });
+        transactionId = linkedTxId;
+      } else {
+        const newTxRef = doc(
+          collection(
+            db,
+            'users',
+            user.id,
+            'accounts',
+            accountType,
+            'transactions',
+          ),
+        );
+        batch.set(newTxRef, {
+          description: `${debt.description} — Parcela ${n}/${debt.installments}`,
+          amount: debt.installmentAmount,
+          category: 'outros',
+          type: 'expense',
+          status: 'pago',
+          date: todayYmd,
+          createdAt: todayIso,
+        });
+        transactionId = newTxRef.id;
+        createdTransaction = true;
+      }
+      newEntries.push({
+        installmentNumber: n,
+        paidAt: todayIso,
         amount: debt.installmentAmount,
+        transactionId,
+        createdTransaction,
       });
     }
 
-    return updateMutation.mutateAsync({
-      id: debt.id,
-      data: {
-        paidInstallments: debt.installments,
-        status: 'pago',
-        paymentHistory: [...history, ...remainingEntries],
-      },
+    const history = debt.paymentHistory ?? [];
+    batch.update(debtRef, {
+      paidInstallments: debt.installments,
+      status: 'pago',
+      paymentHistory: [...history, ...newEntries],
     });
+
+    await batch.commit();
+    invalidateAll();
   };
 
   const unmarkLastInstallment = async (debt: Debt) => {
+    if (!user) throw new Error('User not authenticated');
     const currentPaid = debt.paidInstallments || 0;
     if (currentPaid <= 0) return;
     const newPaid = currentPaid - 1;
     const history = debt.paymentHistory ?? [];
-    // Remove the most recently logged entry for the last installment
     const idx = [...history]
       .map((p, i) => ({ p, i }))
       .reverse()
       .find((x) => x.p.installmentNumber === currentPaid)?.i;
+    const lastEntry = idx !== undefined ? history[idx] : null;
     const newHistory =
       idx !== undefined
         ? [...history.slice(0, idx), ...history.slice(idx + 1)]
         : history;
 
-    return updateMutation.mutateAsync({
-      id: debt.id,
-      data: {
-        paidInstallments: newPaid,
-        status: 'a_pagar',
-        paymentHistory: newHistory,
-      },
+    const batch = writeBatch(db);
+    const debtRef = doc(
+      db,
+      'users',
+      user.id,
+      'accounts',
+      accountType,
+      'debts',
+      debt.id,
+    );
+
+    if (lastEntry?.transactionId) {
+      const txRef = doc(
+        db,
+        'users',
+        user.id,
+        'accounts',
+        accountType,
+        'transactions',
+        lastEntry.transactionId,
+      );
+      if (lastEntry.createdTransaction) {
+        batch.delete(txRef);
+      } else {
+        batch.update(txRef, { status: 'a_pagar' });
+      }
+    }
+
+    batch.update(debtRef, {
+      paidInstallments: newPaid,
+      status: 'a_pagar',
+      paymentHistory: newHistory,
     });
+
+    await batch.commit();
+    invalidateAll();
   };
 
   const summary = useMemo(() => {

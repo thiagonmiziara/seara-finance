@@ -78,6 +78,11 @@ export const debtPaymentSchema = z.object({
   installmentNumber: z.number().int().positive(),
   paidAt: z.string(), // ISO string — when this installment was marked paid
   amount: z.number(),
+  transactionId: z.string().optional(),
+  /** True when the linked transaction was created by paying this installment
+   * (versus flipping an existing card-installment transaction from a_pagar to pago).
+   * Used by undo to decide between deleting vs reverting the transaction. */
+  createdTransaction: z.boolean().optional(),
 });
 export type DebtPayment = z.infer<typeof debtPaymentSchema>;
 
