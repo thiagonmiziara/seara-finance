@@ -81,72 +81,245 @@ export function useDebts() {
 
       queryClient.setQueryData(queryKey, dbts);
 
-      // One-time migration per session:
-      // 1) backfill missing paymentHistory entries (paidInstallments > history.length)
-      // 2) clamp any existing entries with paidAt in the future down to today
-      // Synthetic date: min(dueDate + (n-1) meses, hoje) — never in the future,
-      // since we only know the parcela was paid by now.
-      const nowMs = Date.now();
-      const todayIso = new Date().toISOString();
-      const updates: Array<{ id: string; merged: DebtPayment[] }> = [];
-      for (const debt of dbts) {
-        if (backfilledRef.current.has(debt.id)) continue;
-        const paid = debt.paidInstallments ?? 0;
-        const history = debt.paymentHistory ?? [];
-        const due = debt.dueDate ? safeParse(debt.dueDate) : null;
+      // One-time migration per session per debt. Runs async (uses getDocs).
+      // Goals:
+      // 1) Add missing paymentHistory entries (paidInstallments > history.length).
+      // 2) Clamp any existing entries with paidAt in the future down to today.
+      // 3) Link/create transactions for entries without `transactionId` so the
+      //    saldo do account reflete os pagamentos históricos.
+      const debtsToBackfill = dbts.filter(
+        (d) => !backfilledRef.current.has(d.id),
+      );
+      if (debtsToBackfill.length === 0) return;
+      // Mark immediately to prevent concurrent re-runs from overlapping snapshots.
+      for (const d of debtsToBackfill) backfilledRef.current.add(d.id);
 
-        // Clamp future-dated existing entries to today
-        let clampedHistory = history;
-        let needsClamp = false;
-        if (history.some((h) => new Date(h.paidAt).getTime() > nowMs)) {
-          clampedHistory = history.map((h) =>
-            new Date(h.paidAt).getTime() > nowMs
-              ? { ...h, paidAt: todayIso }
-              : h,
-          );
-          needsClamp = true;
-        }
+      (async () => {
+        try {
+          const nowMs = Date.now();
+          const todayIso = new Date().toISOString();
 
-        const existing = new Set(clampedHistory.map((h) => h.installmentNumber));
-        const missing: DebtPayment[] = [];
-        for (let n = 1; n <= paid; n++) {
-          if (existing.has(n)) continue;
-          let paidAtDate = due ? addMonths(due, n - 1) : new Date();
-          if (paidAtDate.getTime() > nowMs) paidAtDate = new Date();
-          missing.push({
-            installmentNumber: n,
-            paidAt: paidAtDate.toISOString(),
-            amount: debt.installmentAmount,
+          type TxOp =
+            | { kind: 'flip'; txId: string }
+            | { kind: 'create'; txId: string; data: Record<string, unknown> };
+          const debtUpdates: Array<{
+            debtId: string;
+            newHistory: DebtPayment[];
+            txOps: TxOp[];
+          }> = [];
+
+          for (const debt of debtsToBackfill) {
+            const paid = debt.paidInstallments ?? 0;
+            let history = debt.paymentHistory ?? [];
+            const due = debt.dueDate ? safeParse(debt.dueDate) : null;
+            let mutated = false;
+
+            // 1) Clamp future-dated paidAt to today
+            if (history.some((h) => new Date(h.paidAt).getTime() > nowMs)) {
+              history = history.map((h) =>
+                new Date(h.paidAt).getTime() > nowMs
+                  ? { ...h, paidAt: todayIso }
+                  : h,
+              );
+              mutated = true;
+            }
+
+            // 2) Pre-fetch card transactions for linking (only for card-backed debts)
+            const cardTxByInst = new Map<
+              number,
+              { id: string; status: string }
+            >();
+            if (debt.cardId) {
+              const snap = await getDocs(
+                query(
+                  collection(
+                    db,
+                    'users',
+                    user.id,
+                    'accounts',
+                    accountType,
+                    'transactions',
+                  ),
+                  where('cardId', '==', debt.cardId),
+                ),
+              );
+              for (const d of snap.docs) {
+                const data = d.data() as any;
+                if (
+                  data.installments?.total === debt.installments &&
+                  data.installments?.current >= 1 &&
+                  data.installments?.current <= debt.installments
+                ) {
+                  const existing = cardTxByInst.get(data.installments.current);
+                  // Prefer a_pagar over already-pago when multiple match
+                  if (
+                    !existing ||
+                    (data.status === 'a_pagar' &&
+                      existing.status !== 'a_pagar')
+                  ) {
+                    cardTxByInst.set(data.installments.current, {
+                      id: d.id,
+                      status: data.status,
+                    });
+                  }
+                }
+              }
+            }
+
+            const txOps: TxOp[] = [];
+            // Track transactionIds we just synthesized to avoid duplicating
+            // when the same loop iterates over the same installment twice.
+            const linkOrCreate = (
+              installmentNumber: number,
+              amount: number,
+              paidAt: string,
+            ): { transactionId: string; createdTransaction: boolean } => {
+              const linked = cardTxByInst.get(installmentNumber);
+              if (linked) {
+                if (linked.status === 'a_pagar') {
+                  txOps.push({ kind: 'flip', txId: linked.id });
+                  // Mark as flipped so subsequent iterations don't re-flip
+                  cardTxByInst.set(installmentNumber, {
+                    id: linked.id,
+                    status: 'pago',
+                  });
+                }
+                return {
+                  transactionId: linked.id,
+                  createdTransaction: false,
+                };
+              }
+              const newTxRef = doc(
+                collection(
+                  db,
+                  'users',
+                  user.id,
+                  'accounts',
+                  accountType,
+                  'transactions',
+                ),
+              );
+              const paidYmd = format(new Date(paidAt), 'yyyy-MM-dd');
+              txOps.push({
+                kind: 'create',
+                txId: newTxRef.id,
+                data: {
+                  description: `${debt.description} — Parcela ${installmentNumber}/${debt.installments}`,
+                  amount,
+                  category: 'outros',
+                  type: 'expense',
+                  status: 'pago',
+                  date: paidYmd,
+                  createdAt: paidAt,
+                },
+              });
+              return {
+                transactionId: newTxRef.id,
+                createdTransaction: true,
+              };
+            };
+
+            // 3) Existing entries without transactionId → link or create
+            history = history.map((e) => {
+              if (e.transactionId) return e;
+              mutated = true;
+              const linkInfo = linkOrCreate(
+                e.installmentNumber,
+                e.amount ?? debt.installmentAmount,
+                e.paidAt,
+              );
+              return { ...e, ...linkInfo };
+            });
+
+            // 4) Missing entries (paid > history.length) → create entries
+            const existingNumbers = new Set(
+              history.map((h) => h.installmentNumber),
+            );
+            for (let n = 1; n <= paid; n++) {
+              if (existingNumbers.has(n)) continue;
+              mutated = true;
+              let paidAtDate = due ? addMonths(due, n - 1) : new Date();
+              if (paidAtDate.getTime() > nowMs) paidAtDate = new Date();
+              const paidIso = paidAtDate.toISOString();
+              const linkInfo = linkOrCreate(
+                n,
+                debt.installmentAmount,
+                paidIso,
+              );
+              history.push({
+                installmentNumber: n,
+                paidAt: paidIso,
+                amount: debt.installmentAmount,
+                ...linkInfo,
+              });
+            }
+
+            history.sort((a, b) => a.installmentNumber - b.installmentNumber);
+
+            if (mutated) {
+              debtUpdates.push({
+                debtId: debt.id,
+                newHistory: history,
+                txOps,
+              });
+            }
+          }
+
+          if (debtUpdates.length === 0) return;
+
+          // Commit in chunks of <= 450 ops to stay under Firestore's 500 limit
+          let batch = writeBatch(db);
+          let opCount = 0;
+          const flush = async () => {
+            if (opCount > 0) {
+              await batch.commit();
+              batch = writeBatch(db);
+              opCount = 0;
+            }
+          };
+          for (const u of debtUpdates) {
+            const debtRef = doc(
+              db,
+              'users',
+              user.id,
+              'accounts',
+              accountType,
+              'debts',
+              u.debtId,
+            );
+            batch.update(debtRef, { paymentHistory: u.newHistory });
+            opCount += 1;
+            for (const op of u.txOps) {
+              const txRef = doc(
+                db,
+                'users',
+                user.id,
+                'accounts',
+                accountType,
+                'transactions',
+                op.txId,
+              );
+              if (op.kind === 'flip') {
+                batch.update(txRef, { status: 'pago' });
+              } else {
+                batch.set(txRef, op.data);
+              }
+              opCount += 1;
+              if (opCount >= 450) await flush();
+            }
+            if (opCount >= 450) await flush();
+          }
+          await flush();
+          // Bonus: fresh transaction snapshot (we touched many)
+          queryClient.invalidateQueries({
+            queryKey: ['transactions', user.id, accountType],
           });
+        } catch (err) {
+          console.error('[useDebts] backfill failed:', err);
+          // Allow retry on next mount
+          for (const d of debtsToBackfill) backfilledRef.current.delete(d.id);
         }
-
-        if (needsClamp || missing.length > 0) {
-          const merged = [...clampedHistory, ...missing].sort(
-            (a, b) => a.installmentNumber - b.installmentNumber,
-          );
-          updates.push({ id: debt.id, merged });
-        }
-        backfilledRef.current.add(debt.id);
-      }
-
-      if (updates.length > 0) {
-        const batch = writeBatch(db);
-        for (const { id, merged } of updates) {
-          const ref = doc(
-            db,
-            'users',
-            user.id,
-            'accounts',
-            accountType,
-            'debts',
-            id,
-          );
-          batch.update(ref, { paymentHistory: merged });
-        }
-        batch.commit().catch((err) => {
-          console.error('[useDebts] paymentHistory backfill failed:', err);
-        });
-      }
+      })();
     });
 
     return () => unsubscribe();
@@ -234,13 +407,70 @@ export function useDebts() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({
+      id,
+      mode = 'soft',
+    }: {
+      id: string;
+      mode?: 'soft' | 'revert';
+    }) => {
       if (!user) throw new Error('User not authenticated');
-      return deleteDoc(
-        doc(db, 'users', user.id, 'accounts', accountType, 'debts', id),
+
+      if (mode === 'soft') {
+        return deleteDoc(
+          doc(db, 'users', user.id, 'accounts', accountType, 'debts', id),
+        );
+      }
+
+      // 'revert': also undo each paymentHistory entry's transaction effect
+      const cached = queryClient.getQueryData<Debt[]>(queryKey) || [];
+      const debt = cached.find((d) => d.id === id);
+      const history = debt?.paymentHistory ?? [];
+
+      let batch = writeBatch(db);
+      let count = 0;
+      const flush = async () => {
+        if (count > 0) {
+          await batch.commit();
+          batch = writeBatch(db);
+          count = 0;
+        }
+      };
+
+      for (const entry of history) {
+        if (!entry.transactionId) continue;
+        const txRef = doc(
+          db,
+          'users',
+          user.id,
+          'accounts',
+          accountType,
+          'transactions',
+          entry.transactionId,
+        );
+        if (entry.createdTransaction) {
+          batch.delete(txRef);
+        } else {
+          batch.update(txRef, { status: 'a_pagar' });
+        }
+        count += 1;
+        if (count >= 450) await flush();
+      }
+
+      const debtRef = doc(
+        db,
+        'users',
+        user.id,
+        'accounts',
+        accountType,
+        'debts',
+        id,
       );
+      batch.delete(debtRef);
+      count += 1;
+      await flush();
     },
-    onMutate: async (id) => {
+    onMutate: async ({ id }) => {
       await queryClient.cancelQueries({ queryKey });
       const previousDebts = queryClient.getQueryData<Debt[]>(queryKey);
 
@@ -250,13 +480,18 @@ export function useDebts() {
 
       return { previousDebts };
     },
-    onError: (_err, _id, context) => {
+    onError: (_err, _vars, context) => {
       if (context?.previousDebts) {
         queryClient.setQueryData(queryKey, context.previousDebts);
       }
     },
-    onSettled: () => {
+    onSettled: (_data, _err, vars) => {
       queryClient.invalidateQueries({ queryKey });
+      if (vars.mode === 'revert') {
+        queryClient.invalidateQueries({
+          queryKey: ['transactions', user?.id, accountType],
+        });
+      }
     },
   });
 
@@ -466,7 +701,10 @@ export function useDebts() {
     invalidateAll();
   };
 
-  const unmarkLastInstallment = async (debt: Debt) => {
+  const unmarkLastInstallment = async (
+    debt: Debt,
+    mode: 'soft' | 'revert' = 'revert',
+  ) => {
     if (!user) throw new Error('User not authenticated');
     const currentPaid = debt.paidInstallments || 0;
     if (currentPaid <= 0) return;
@@ -493,7 +731,7 @@ export function useDebts() {
       debt.id,
     );
 
-    if (lastEntry?.transactionId) {
+    if (mode === 'revert' && lastEntry?.transactionId) {
       const txRef = doc(
         db,
         'users',
