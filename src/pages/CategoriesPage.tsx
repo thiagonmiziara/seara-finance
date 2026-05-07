@@ -15,9 +15,9 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { cn } from '@/lib/utils';
 
 const COLOR_PALETTE = [
-  '#16a34a', '#2563eb', '#ef4444', '#f59e0b', '#8b5cf6',
-  '#e11d48', '#0ea5a4', '#06b6d4', '#84cc16', '#f97316',
-  '#10b981', '#7c3aed', '#ef7b45', '#1e293b', '#374151',
+  '#2563eb', '#2563eb', '#ef4444', '#f59e0b', '#8b5cf6',
+  '#e11d48', '#0ea5a4', '#06b6d4', '#0ea5e9', '#f97316',
+  '#3b82f6', '#7c3aed', '#ef7b45', '#1e293b', '#374151',
 ];
 
 export default function CategoriesPage() {

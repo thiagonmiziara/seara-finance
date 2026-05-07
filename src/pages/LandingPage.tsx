@@ -8,16 +8,19 @@ import {
   Repeat,
   PieChart,
   Users,
-  TrendingUp,
-  ArrowUp,
-  ArrowDown,
   ChevronDown,
+  ChevronLeft,
   Sun,
   Moon,
+  MessageCircle,
+  Mic,
+  CheckCheck,
+  MoreVertical,
+  Phone,
+  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import logoUrl from '@/assets/logo.png';
 import { useTheme } from '@/hooks/useTheme';
 import { useReveal } from '@/hooks/useReveal';
 
@@ -28,22 +31,18 @@ function cn(...c: Array<string | false | null | undefined>) {
 function Brand({ size = 36 }: { size?: number }) {
   return (
     <div className='flex items-center gap-2.5'>
-      <div
-        className='flex items-center justify-center rounded-xl bg-zinc-900 dark:bg-zinc-800 shadow-soft ring-1 ring-emerald-500/20 dark:ring-white/10 overflow-hidden'
+      <img
+        src='/finzap-icon.svg'
+        alt='Finzap'
+        className='rounded-xl shadow-soft'
         style={{ width: size, height: size }}
-      >
-        <img
-          src={logoUrl}
-          alt='Seara Finance'
-          className='h-full w-full object-contain p-1.5'
-        />
-      </div>
+      />
       <div className='flex flex-col leading-tight'>
-        <span className='font-display font-bold tracking-tight text-[15px] text-zinc-900 dark:text-zinc-100'>
-          Seara Finance
+        <span className='font-display font-bold tracking-tight text-[15px] text-foreground'>
+          Finzap
         </span>
-        <span className='text-[10px] uppercase tracking-[0.18em] text-zinc-400 font-medium'>
-          Vida financeira
+        <span className='text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-medium'>
+          Controle no zap
         </span>
       </div>
     </div>
@@ -63,7 +62,7 @@ function Pill({
     neutral: 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300',
     brand: 'bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-400',
     success:
-      'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400',
+      'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400',
     warn: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400',
     danger: 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400',
   } as const;
@@ -94,104 +93,115 @@ function ThemeToggle() {
   );
 }
 
-function MiniDonut({
-  segments,
-  size = 110,
-  thickness = 14,
-}: {
-  segments: { color: string; value: number }[];
-  size?: number;
-  thickness?: number;
-}) {
-  const total = segments.reduce((a, s) => a + s.value, 0);
-  const r = (size - thickness) / 2;
-  const c = 2 * Math.PI * r;
-  let offset = 0;
+function WhatsAppPhone() {
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill='none'
-        className='stroke-zinc-100 dark:stroke-zinc-800'
-        strokeWidth={thickness}
-      />
-      {segments.map((s, i) => {
-        const len = (s.value / total) * c;
-        const dasharray = `${len} ${c - len}`;
-        const el = (
-          <circle
-            key={i}
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            fill='none'
-            stroke={s.color}
-            strokeWidth={thickness}
-            strokeDasharray={dasharray}
-            strokeDashoffset={-offset}
-            transform={`rotate(-90 ${size / 2} ${size / 2})`}
-            strokeLinecap='butt'
-          />
-        );
-        offset += len;
-        return el;
-      })}
-      <text
-        x='50%'
-        y='46%'
-        textAnchor='middle'
-        className='fill-zinc-400 text-[9px] uppercase font-bold tracking-wider'
-      >
-        Total
-      </text>
-      <text
-        x='50%'
-        y='60%'
-        textAnchor='middle'
-        className='fill-zinc-900 dark:fill-zinc-100 text-[13px] font-bold'
-      >
-        R$ 3,9k
-      </text>
-    </svg>
-  );
-}
-
-function ScoreGauge({ value, size = 70 }: { value: number; size?: number }) {
-  const r = (size - 10) / 2;
-  const c = 2 * Math.PI * r;
-  const len = (value / 100) * c;
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill='none'
-        className='stroke-zinc-100 dark:stroke-zinc-800'
-        strokeWidth={6}
-      />
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={r}
-        fill='none'
-        stroke='#22a85c'
-        strokeWidth={6}
-        strokeDasharray={`${len} ${c - len}`}
-        strokeLinecap='round'
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-      />
-      <text
-        x='50%'
-        y='55%'
-        textAnchor='middle'
-        className='fill-zinc-900 dark:fill-zinc-100 text-[15px] font-extrabold'
-      >
-        {value}
-      </text>
-    </svg>
+    <div className='relative mx-auto w-[280px] sm:w-[300px]'>
+      <div className='absolute -inset-6 bg-gradient-to-br from-emerald-500/30 via-brand-500/20 to-transparent rounded-[3rem] blur-2xl pointer-events-none' />
+      <div className='relative bg-zinc-900 dark:bg-zinc-950 rounded-[2.8rem] p-2.5 shadow-pop ring-1 ring-zinc-800'>
+        <div className='absolute -right-1 top-24 w-1 h-12 bg-zinc-800 rounded-r-sm' />
+        <div className='absolute -left-1 top-20 w-1 h-8 bg-zinc-800 rounded-l-sm' />
+        <div className='absolute -left-1 top-32 w-1 h-12 bg-zinc-800 rounded-l-sm' />
+        <div className='absolute top-0 left-1/2 -translate-x-1/2 z-20 bg-zinc-900 dark:bg-zinc-950 w-28 h-7 rounded-b-3xl' />
+        <div className='relative bg-[#0b141a] rounded-[2.3rem] overflow-hidden flex flex-col h-[560px]'>
+          <div className='flex items-center justify-between px-6 pt-3 pb-1 text-white text-[10px] font-semibold tabular-nums'>
+            <span>9:41</span>
+            <span className='flex items-center gap-1'>
+              <span className='w-3 h-2 border border-white rounded-sm relative'>
+                <span className='absolute inset-0.5 bg-white rounded-[1px]' />
+              </span>
+            </span>
+          </div>
+          <div className='bg-[#202c33] px-3 py-2.5 flex items-center gap-2.5'>
+            <ChevronLeft className='text-zinc-300 shrink-0' size={18} />
+            <div className='w-9 h-9 rounded-full bg-white flex items-center justify-center overflow-hidden shrink-0'>
+              <img src='/finzap-icon.svg' alt='Finzap' className='w-9 h-9' />
+            </div>
+            <div className='flex-1 leading-tight min-w-0'>
+              <p className='text-white text-[13px] font-semibold truncate'>
+                Finzap
+              </p>
+              <p className='text-emerald-400 text-[10px]'>online</p>
+            </div>
+            <Phone className='text-zinc-300 shrink-0' size={16} />
+            <MoreVertical className='text-zinc-300 shrink-0' size={16} />
+          </div>
+          <div className='flex-1 px-2.5 py-3 space-y-1.5 overflow-hidden bg-[#0b141a]'>
+            <div className='flex justify-center mb-1'>
+              <span className='bg-[#1f2c33] text-zinc-400 text-[9px] font-semibold px-2 py-0.5 rounded'>
+                HOJE
+              </span>
+            </div>
+            <div className='flex justify-end'>
+              <div className='bg-[#005c4b] rounded-lg rounded-tr-sm px-2.5 py-1.5 max-w-[80%] shadow-sm'>
+                <p className='text-white text-[12px] leading-snug'>
+                  almoço 35
+                </p>
+                <p className='text-zinc-300/70 text-[9px] text-right mt-0.5 flex items-center justify-end gap-0.5'>
+                  14:32{' '}
+                  <CheckCheck size={11} className='text-sky-400' />
+                </p>
+              </div>
+            </div>
+            <div className='flex justify-start'>
+              <div className='bg-[#202c33] rounded-lg rounded-tl-sm px-2.5 py-1.5 max-w-[88%] shadow-sm'>
+                <p className='text-white text-[12px] leading-snug'>
+                  ✅ Lançado<br />
+                  <span className='text-zinc-300'>Almoço — </span>
+                  <span className='text-white font-semibold'>R$ 35,00</span>
+                  <br />
+                  <span className='text-emerald-400 text-[11px]'>
+                    📂 Alimentação
+                  </span>
+                </p>
+                <p className='text-zinc-400 text-[9px] text-right mt-0.5'>
+                  14:32
+                </p>
+              </div>
+            </div>
+            <div className='flex justify-end pt-1'>
+              <div className='bg-[#005c4b] rounded-lg rounded-tr-sm px-2.5 py-1.5 max-w-[80%] shadow-sm'>
+                <p className='text-white text-[12px] leading-snug'>
+                  quanto gastei esse mês?
+                </p>
+                <p className='text-zinc-300/70 text-[9px] text-right mt-0.5 flex items-center justify-end gap-0.5'>
+                  14:33{' '}
+                  <CheckCheck size={11} className='text-sky-400' />
+                </p>
+              </div>
+            </div>
+            <div className='flex justify-start'>
+              <div className='bg-[#202c33] rounded-lg rounded-tl-sm px-2.5 py-1.5 max-w-[90%] shadow-sm'>
+                <p className='text-white text-[12px] leading-snug'>
+                  📊 <span className='font-semibold'>Resumo de Maio</span>
+                  <br />
+                  <span className='text-zinc-300'>Despesas: </span>
+                  <span className='text-red-400 font-semibold'>R$ 3.940</span>
+                  <br />
+                  <span className='text-zinc-300'>Receitas: </span>
+                  <span className='text-emerald-400 font-semibold'>
+                    R$ 8.500
+                  </span>
+                  <br />
+                  <span className='text-zinc-300'>Saldo: </span>
+                  <span className='text-white font-bold'>R$ 4.560</span>
+                </p>
+                <p className='text-zinc-400 text-[9px] text-right mt-0.5'>
+                  14:33
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className='bg-[#202c33] px-2 py-2 flex items-center gap-2'>
+            <div className='flex-1 bg-[#2a3942] rounded-full px-3 py-1.5'>
+              <span className='text-zinc-500 text-[11px]'>Mensagem</span>
+            </div>
+            <div className='w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center shadow'>
+              <Mic size={16} className='text-white' />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -233,6 +243,12 @@ function LandingNav({
             Como funciona
           </a>
           <a
+            href='#planos'
+            className='hover:text-zinc-900 dark:hover:text-zinc-100'
+          >
+            Planos
+          </a>
+          <a
             href='#faq'
             className='hover:text-zinc-900 dark:hover:text-zinc-100'
           >
@@ -265,164 +281,75 @@ function LandingHero({ onSignup }: { onSignup: () => void }) {
         className='absolute inset-0 pointer-events-none'
         style={{
           background:
-            'radial-gradient(ellipse at top right, rgba(34,168,92,.15), transparent 60%)',
+            'radial-gradient(ellipse at top right, rgba(33,75,148,.15), transparent 60%)',
         }}
       />
       <div className='absolute -top-32 -right-20 w-[500px] h-[500px] rounded-full bg-brand-500/10 blur-3xl pointer-events-none' />
-      <div className='relative max-w-7xl mx-auto px-4 lg:px-8 pt-12 pb-16 lg:pt-24 lg:pb-28 grid lg:grid-cols-2 gap-12 items-center'>
+      <div className='relative max-w-7xl mx-auto px-4 lg:px-8 pt-12 pb-16 lg:pt-24 lg:pb-28 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center'>
         <div>
-          <Pill tone='brand' className='mb-5 anim-fade-up'>
-            <Sparkles size={11} /> 100% gratuito
+          <Pill tone='success' className='mb-5 anim-fade-up'>
+            <MessageCircle size={11} /> Integrado com WhatsApp
           </Pill>
           <h1
             className='font-display font-extrabold text-4xl md:text-5xl lg:text-6xl tracking-tight leading-[1.05] anim-fade-up text-zinc-900 dark:text-zinc-100'
             style={{ animationDelay: '.05s' }}
           >
-            Tome o <span className='gradient-text'>controle</span> do seu
-            dinheiro
-            <br className='hidden md:block' /> sem complicar.
+            Suas finanças no{' '}
+            <span className='gradient-text'>WhatsApp</span>.
+            <br className='hidden md:block' /> Sem abrir app.
           </h1>
           <p
             className='mt-5 text-lg text-zinc-600 dark:text-zinc-300 max-w-xl leading-relaxed anim-fade-up'
             style={{ animationDelay: '.15s' }}
           >
-            O Seara Finance organiza suas contas, cartões e parcelamentos em um
-            só lugar. Veja para onde vai cada centavo e melhore sua saúde
-            financeira mês a mês — gratuito para todos os membros.
+            Mande uma mensagem do tipo <strong>"almoço 35"</strong> e o
+            Finzap lança, categoriza e organiza. Pergunte quanto gastou,
+            consulte cartões e contas — tudo direto do chat. O app fica para
+            quando você quiser ver os gráficos.
           </p>
           <div
-            className='mt-7 flex flex-wrap gap-3 anim-fade-up'
+            className='mt-7 flex flex-col sm:flex-row sm:flex-wrap gap-3 anim-fade-up'
             style={{ animationDelay: '.25s' }}
           >
             <Button
               size='lg'
               onClick={onSignup}
-              className='relative overflow-hidden gap-2'
+              className='relative overflow-hidden gap-2 w-full sm:w-auto'
             >
               <Sparkles size={16} />
-              <span className='relative z-10'>Acessar gratuitamente</span>
+              <span className='relative z-10'>Começar agora</span>
               <span className='absolute inset-0 anim-shimmer pointer-events-none' />
             </Button>
             <Button
               size='lg'
               variant='outline'
-              className='gap-2'
+              className='gap-2 w-full sm:w-auto'
               onClick={() =>
                 document
-                  .getElementById('como-funciona')
+                  .getElementById('planos')
                   ?.scrollIntoView({ behavior: 'smooth' })
               }
             >
-              Ver como funciona <ArrowRight size={16} />
+              Ver planos <ArrowRight size={16} />
             </Button>
           </div>
           <div
-            className='mt-7 flex items-center gap-6 text-sm text-zinc-500 dark:text-zinc-400 anim-fade-up'
+            className='mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-zinc-500 dark:text-zinc-400 anim-fade-up'
             style={{ animationDelay: '.35s' }}
           >
             <span className='flex items-center gap-1.5'>
-              <CheckCircle2 size={14} className='text-brand-600' /> Sem custo
+              <CheckCircle2 size={14} className='text-brand-600' /> A partir de
+              R$ 16,66/mês
             </span>
             <span className='flex items-center gap-1.5'>
-              <CheckCircle2 size={14} className='text-brand-600' /> 100% online
+              <CheckCircle2 size={14} className='text-brand-600' /> Cancele
+              quando quiser
             </span>
           </div>
         </div>
 
-        <div className='relative anim-float-slow'>
-          <div className='absolute -inset-6 bg-gradient-to-br from-brand-500/20 to-transparent rounded-3xl blur-2xl' />
-          <Card className='relative p-5 shadow-pop space-y-4 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'>
-            <div
-              className='rounded-xl p-4'
-              style={{
-                background:
-                  'linear-gradient(135deg, rgba(34,168,92,.08), rgba(34,168,92,.02))',
-              }}
-            >
-              <div className='flex items-center justify-between mb-1'>
-                <p className='text-[10px] uppercase tracking-wider font-semibold text-zinc-500'>
-                  Saldo do período
-                </p>
-                <Pill tone='success'>
-                  <TrendingUp size={10} />
-                  +12,4%
-                </Pill>
-              </div>
-              <p className='font-display font-extrabold text-3xl tabular-nums text-zinc-900 dark:text-zinc-100'>
-                R$ 4.559,64
-              </p>
-              <div className='grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-zinc-200/60 dark:border-zinc-800/60'>
-                <div>
-                  <p className='text-[9px] uppercase tracking-wider font-bold text-brand-700 dark:text-brand-400 flex items-center gap-1'>
-                    <ArrowUp size={10} />
-                    Receitas
-                  </p>
-                  <p className='font-bold tabular-nums text-brand-700 dark:text-brand-400 text-sm'>
-                    R$ 8.500
-                  </p>
-                </div>
-                <div>
-                  <p className='text-[9px] uppercase tracking-wider font-bold text-red-600 dark:text-red-400 flex items-center gap-1'>
-                    <ArrowDown size={10} />
-                    Despesas
-                  </p>
-                  <p className='font-bold tabular-nums text-red-600 dark:text-red-400 text-sm'>
-                    R$ 3.940
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div>
-              <p className='text-xs font-semibold text-zinc-500 mb-2'>
-                Por categoria
-              </p>
-              <div className='flex items-center gap-3'>
-                <MiniDonut
-                  segments={[
-                    { color: '#ef4444', value: 2400 },
-                    { color: '#f97316', value: 1066 },
-                    { color: '#f59e0b', value: 451 },
-                    { color: '#3b82f6', value: 23 },
-                  ]}
-                />
-                <ul className='flex-1 space-y-1.5 text-xs'>
-                  {[
-                    ['Moradia', '#ef4444', 'R$ 2.400'],
-                    ['Compras', '#f97316', 'R$ 1.066'],
-                    ['Alimentação', '#f59e0b', 'R$ 451'],
-                    ['Transporte', '#3b82f6', 'R$ 23'],
-                  ].map(([label, color, val]) => (
-                    <li
-                      key={label}
-                      className='flex items-center justify-between'
-                    >
-                      <span className='flex items-center gap-1.5'>
-                        <span
-                          className='h-2 w-2 rounded-full'
-                          style={{ background: color as string }}
-                        />
-                        {label}
-                      </span>
-                      <span className='font-semibold tabular-nums'>{val}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </Card>
-          <div className='hidden md:block absolute -left-8 bottom-10 anim-float'>
-            <Card className='p-3 flex items-center gap-3 shadow-pop bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'>
-              <ScoreGauge value={72} size={70} />
-              <div>
-                <p className='text-[10px] uppercase tracking-wider font-bold text-zinc-500'>
-                  Saúde
-                </p>
-                <p className='font-display font-bold text-sm text-zinc-900 dark:text-zinc-100'>
-                  Bom
-                </p>
-              </div>
-            </Card>
-          </div>
+        <div className='relative anim-float-slow flex justify-center lg:justify-end'>
+          <WhatsAppPhone />
         </div>
       </div>
     </section>
@@ -432,10 +359,10 @@ function LandingHero({ onSignup }: { onSignup: () => void }) {
 function LandingTrust() {
   useReveal();
   const stats = [
-    { value: '100%', label: 'gratuito' },
-    { value: 'Sem', label: 'anúncios' },
+    { value: 'WhatsApp', label: 'integração nativa' },
+    { value: '< 5s', label: 'para lançar um gasto' },
     { value: 'PWA', label: 'funciona offline' },
-    { value: 'Feito', label: 'com amor ♥' },
+    { value: 'Auto', label: 'categorização inteligente' },
   ];
   return (
     <section className='border-y border-zinc-200/70 dark:border-zinc-800/70 bg-white/60 dark:bg-zinc-950/40'>
@@ -596,23 +523,179 @@ function LandingHow() {
   );
 }
 
+function LandingPricing({ onSignup }: { onSignup: () => void }) {
+  useReveal();
+  const [annual, setAnnual] = useState(true);
+  const features = [
+    'Lançamentos ilimitados via WhatsApp',
+    'Categorização automática inteligente',
+    'Cartões, contas e parcelamentos',
+    'Contas fixas com automação',
+    'Score de saúde financeira',
+    'Gráficos e relatórios completos',
+    'Multi-conta (pessoal, casa, negócio)',
+    'Suporte por WhatsApp',
+  ];
+  return (
+    <section
+      id='planos'
+      className='py-16 md:py-20 bg-zinc-50 dark:bg-zinc-950/60 border-y border-zinc-200/70 dark:border-zinc-800/70'
+    >
+      <div className='max-w-5xl mx-auto px-4 lg:px-8'>
+        <div className='text-center max-w-2xl mx-auto mb-10'>
+          <Pill tone='brand' className='mb-4'>
+            Planos
+          </Pill>
+          <h2 className='font-display font-extrabold text-3xl md:text-4xl tracking-tight text-zinc-900 dark:text-zinc-100'>
+            Um plano simples. Tudo incluído.
+          </h2>
+          <p className='text-zinc-600 dark:text-zinc-300 mt-4 text-lg'>
+            Escolha mensal ou economize 16% no anual.
+          </p>
+        </div>
+        <div className='flex justify-center mb-8'>
+          <div className='inline-flex p-1 rounded-full bg-zinc-200/70 dark:bg-zinc-800/70'>
+            <button
+              type='button'
+              onClick={() => setAnnual(false)}
+              className={cn(
+                'px-4 py-1.5 rounded-full text-sm font-semibold transition-all',
+                !annual
+                  ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm'
+                  : 'text-zinc-600 dark:text-zinc-400',
+              )}
+            >
+              Mensal
+            </button>
+            <button
+              type='button'
+              onClick={() => setAnnual(true)}
+              className={cn(
+                'px-4 py-1.5 rounded-full text-sm font-semibold transition-all flex items-center gap-2',
+                annual
+                  ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm'
+                  : 'text-zinc-600 dark:text-zinc-400',
+              )}
+            >
+              Anual
+              <span className='text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 font-bold'>
+                -16%
+              </span>
+            </button>
+          </div>
+        </div>
+        <div className='grid md:grid-cols-2 gap-5 max-w-3xl mx-auto'>
+          <Card className='p-7 reveal bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:shadow-soft transition-all'>
+            <p className='text-xs uppercase tracking-wider font-bold text-zinc-500'>
+              Mensal
+            </p>
+            <div className='mt-3 flex items-baseline gap-1'>
+              <span className='font-display font-extrabold text-4xl text-zinc-900 dark:text-zinc-100 tabular-nums'>
+                R$ 19,90
+              </span>
+              <span className='text-zinc-500 text-sm'>/mês</span>
+            </div>
+            <p className='text-sm text-zinc-500 mt-1'>
+              Cobrança mensal. Cancele quando quiser.
+            </p>
+            <Button
+              variant='outline'
+              className='w-full mt-5'
+              onClick={onSignup}
+            >
+              Começar mensal
+            </Button>
+            <ul className='mt-6 space-y-2.5 text-sm'>
+              {features.map((f) => (
+                <li
+                  key={f}
+                  className='flex items-start gap-2 text-zinc-700 dark:text-zinc-300'
+                >
+                  <CheckCircle2
+                    size={16}
+                    className='text-brand-600 mt-0.5 shrink-0'
+                  />
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </Card>
+          <Card
+            className='p-7 reveal relative bg-white dark:bg-zinc-900 border-2 border-brand-500 shadow-pop hover:shadow-pop transition-all'
+            style={{ transitionDelay: '80ms' }}
+          >
+            <div className='absolute -top-3 left-1/2 -translate-x-1/2'>
+              <span className='inline-flex items-center gap-1 bg-brand-600 text-white text-[11px] font-bold px-3 py-1 rounded-full shadow-soft uppercase tracking-wider'>
+                <Sparkles size={11} /> Mais escolhido
+              </span>
+            </div>
+            <p className='text-xs uppercase tracking-wider font-bold text-brand-600 dark:text-brand-400'>
+              Anual
+            </p>
+            <div className='mt-3 flex items-baseline gap-1'>
+              <span className='font-display font-extrabold text-4xl text-zinc-900 dark:text-zinc-100 tabular-nums'>
+                R$ 16,66
+              </span>
+              <span className='text-zinc-500 text-sm'>/mês</span>
+            </div>
+            <p className='text-sm text-zinc-500 mt-1'>
+              R$ 199,90/ano · economize R$ 38,90
+            </p>
+            <Button className='w-full mt-5 gap-2' onClick={onSignup}>
+              <Sparkles size={16} /> Começar anual
+            </Button>
+            <ul className='mt-6 space-y-2.5 text-sm'>
+              {features.map((f) => (
+                <li
+                  key={f}
+                  className='flex items-start gap-2 text-zinc-700 dark:text-zinc-300'
+                >
+                  <CheckCircle2
+                    size={16}
+                    className='text-brand-600 mt-0.5 shrink-0'
+                  />
+                  {f}
+                </li>
+              ))}
+              <li className='flex items-start gap-2 font-semibold text-brand-700 dark:text-brand-400'>
+                <Zap size={16} className='text-brand-600 mt-0.5 shrink-0' />
+                2 meses grátis
+              </li>
+            </ul>
+          </Card>
+        </div>
+        <p className='text-center text-xs text-zinc-500 mt-6'>
+          Pagamento seguro · Pix, cartão e boleto · Sem fidelidade ·{' '}
+          <span className='text-zinc-400'>
+            (plano selecionado: <strong>{annual ? 'Anual' : 'Mensal'}</strong>)
+          </span>
+        </p>
+      </div>
+    </section>
+  );
+}
+
 function LandingFaq() {
   const items = [
     {
+      q: 'Como funciona a integração com WhatsApp?',
+      a: 'Após criar sua conta, você conecta seu número e ganha um contato do Finzap no WhatsApp. Mande mensagens como "uber 28" ou "salário 5000" e ele lança, categoriza e responde com confirmação. Também pode pedir resumos: "quanto gastei essa semana?".',
+    },
+    {
       q: 'Meus dados estão seguros?',
-      a: 'Sim. Usamos criptografia de ponta a ponta e Firebase com autenticação Google. Nunca pedimos sua senha do banco e não acessamos suas contas bancárias.',
+      a: 'Sim. Usamos criptografia, Firebase com autenticação Google e jamais pedimos sua senha do banco. Não acessamos suas contas bancárias — você é quem decide o que registrar.',
     },
     {
-      q: 'Preciso conectar com meu banco?',
-      a: 'Não. O Seara Finance funciona com lançamentos manuais ou importação de CSV. Você mantém total controle dos dados.',
+      q: 'Quanto custa e como pago?',
+      a: 'R$ 19,90/mês ou R$ 199,90/ano (equivale a R$ 16,66/mês — economia de 16%). Aceitamos Pix, cartão e boleto. Sem fidelidade — cancele quando quiser.',
     },
     {
-      q: 'É realmente gratuito?',
-      a: 'Sim. O Seara Finance é gratuito, sem anúncios e sem cobrança.',
+      q: 'Posso usar sem o WhatsApp?',
+      a: 'Sim. O app web/PWA funciona completo — WhatsApp é só um atalho para quem não quer abrir o app o tempo todo.',
     },
     {
       q: 'Funciona no celular?',
-      a: 'Sim. É um PWA — pode instalar como app no Android e iOS direto pelo navegador.',
+      a: 'Sim. É um PWA — pode instalar como app no Android e iOS direto pelo navegador, e funciona offline.',
     },
   ];
   const [open, setOpen] = useState<number>(0);
@@ -670,32 +753,37 @@ function LandingCTA({ onSignup }: { onSignup: () => void }) {
           className='p-8 sm:p-10 lg:p-14 text-center relative overflow-hidden bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'
           style={{
             backgroundImage:
-              'radial-gradient(circle at top right, rgba(34,168,92,.12), transparent 60%)',
+              'radial-gradient(circle at top right, rgba(33,75,148,.12), transparent 60%)',
           }}
         >
           <div className='absolute -top-20 -right-20 w-72 h-72 rounded-full bg-brand-500/15 blur-3xl' />
           <div className='relative'>
             <h2 className='font-display font-extrabold text-3xl md:text-4xl lg:text-5xl tracking-tight max-w-2xl mx-auto leading-[1.1] text-zinc-900 dark:text-zinc-100'>
-              Sua vida financeira merece{' '}
-              <span className='text-brand-600'>mais clareza</span>.
+              Pare de abrir app pra anotar gasto.{' '}
+              <span className='text-brand-600'>Manda no zap</span>.
             </h2>
             <p className='mt-5 text-zinc-600 dark:text-zinc-300 text-lg max-w-xl mx-auto'>
-              Acesse agora. É gratuito e leva menos de 1 minuto.
+              A partir de R$ 16,66/mês no plano anual. Cancele quando quiser.
             </p>
-            <div className='mt-7 flex flex-wrap gap-3 justify-center'>
-              <Button size='lg' onClick={onSignup} className='gap-2'>
-                <Sparkles size={16} /> Acessar gratuitamente
+            <div className='mt-7 flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:justify-center'>
+              <Button
+                size='lg'
+                onClick={onSignup}
+                className='gap-2 w-full sm:w-auto'
+              >
+                <Sparkles size={16} /> Começar agora
               </Button>
               <Button
                 size='lg'
                 variant='outline'
+                className='w-full sm:w-auto'
                 onClick={() =>
                   document
-                    .getElementById('recursos')
+                    .getElementById('planos')
                     ?.scrollIntoView({ behavior: 'smooth' })
                 }
               >
-                Saiba mais
+                Ver planos
               </Button>
             </div>
           </div>
@@ -706,74 +794,90 @@ function LandingCTA({ onSignup }: { onSignup: () => void }) {
 }
 
 function LandingFooter() {
+  const linkClass =
+    'text-zinc-500 hover:text-brand-600 dark:hover:text-brand-400 transition-colors';
   return (
-    <footer className='border-t border-zinc-200/70 dark:border-zinc-800/70 bg-zinc-50 dark:bg-zinc-950/60 py-12'>
-      <div className='max-w-7xl mx-auto px-4 lg:px-8 grid sm:grid-cols-2 md:grid-cols-4 gap-8'>
-        <div className='md:col-span-2'>
-          <Brand size={36} />
-          <p className='text-sm text-zinc-500 mt-4 max-w-sm'>
-            Organize suas finanças com clareza. Disponível como PWA — leve,
-            rápido e funciona offline.
-          </p>
+    <footer className='relative border-t border-zinc-200/70 dark:border-zinc-800/70 bg-zinc-50 dark:bg-zinc-950/60 overflow-hidden'>
+      <div
+        className='absolute inset-0 pointer-events-none opacity-60'
+        style={{
+          background:
+            'radial-gradient(ellipse at top left, rgba(33,75,148,.08), transparent 55%)',
+        }}
+      />
+      <div className='relative max-w-7xl mx-auto px-4 lg:px-8 py-12 md:py-14'>
+        <div className='grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-10'>
+          <div className='col-span-2 md:col-span-2'>
+            <Brand size={36} />
+            <p className='text-sm text-zinc-500 dark:text-zinc-400 mt-4 max-w-sm leading-relaxed'>
+              Organize suas finanças com clareza. Disponível como PWA — leve,
+              rápido e funciona offline.
+            </p>
+            <div className='mt-5 flex flex-wrap gap-2'>
+              <Pill tone='success'>
+                <MessageCircle size={11} /> WhatsApp nativo
+              </Pill>
+              <Pill tone='brand'>
+                <Sparkles size={11} /> A partir de R$ 16,66/mês
+              </Pill>
+            </div>
+          </div>
+          <div>
+            <p className='font-semibold text-sm mb-3 text-zinc-900 dark:text-zinc-100 uppercase tracking-wider text-[11px]'>
+              Produto
+            </p>
+            <ul className='space-y-2.5 text-sm'>
+              <li>
+                <a href='#recursos' className={linkClass}>
+                  Recursos
+                </a>
+              </li>
+              <li>
+                <a href='#como-funciona' className={linkClass}>
+                  Como funciona
+                </a>
+              </li>
+              <li>
+                <a href='#planos' className={linkClass}>
+                  Planos
+                </a>
+              </li>
+              <li>
+                <a href='#faq' className={linkClass}>
+                  Dúvidas
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <p className='font-semibold text-sm mb-3 text-zinc-900 dark:text-zinc-100 uppercase tracking-wider text-[11px]'>
+              Sobre
+            </p>
+            <ul className='space-y-2.5 text-sm'>
+              <li>
+                <a href='#' className={linkClass}>
+                  Contato
+                </a>
+              </li>
+              <li>
+                <a href='#' className={linkClass}>
+                  Privacidade
+                </a>
+              </li>
+              <li>
+                <a href='#' className={linkClass}>
+                  Termos
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
-        <div>
-          <p className='font-semibold text-sm mb-3 text-zinc-900 dark:text-zinc-100'>
-            Produto
-          </p>
-          <ul className='space-y-2 text-sm text-zinc-500'>
-            <li>
-              <a
-                href='#recursos'
-                className='hover:text-zinc-900 dark:hover:text-zinc-100'
-              >
-                Recursos
-              </a>
-            </li>
-            <li>
-              <a
-                href='#como-funciona'
-                className='hover:text-zinc-900 dark:hover:text-zinc-100'
-              >
-                Como funciona
-              </a>
-            </li>
-            <li>
-              <a
-                href='#faq'
-                className='hover:text-zinc-900 dark:hover:text-zinc-100'
-              >
-                Dúvidas
-              </a>
-            </li>
-          </ul>
+        <div className='mt-10 pt-6 border-t border-zinc-200/70 dark:border-zinc-800/70 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500 dark:text-zinc-400'>
+          <span className='font-medium'>© 2026 Finzap. Todos os direitos reservados.</span>
+          <span className='flex items-center gap-1.5'>
+            Feito com <span className='text-red-500'>♥</span> no Brasil
+          </span>
         </div>
-        <div>
-          <p className='font-semibold text-sm mb-3 text-zinc-900 dark:text-zinc-100'>
-            Sobre
-          </p>
-          <ul className='space-y-2 text-sm text-zinc-500'>
-            <li>
-              <a
-                href='#'
-                className='hover:text-zinc-900 dark:hover:text-zinc-100'
-              >
-                Contato
-              </a>
-            </li>
-            <li>
-              <a
-                href='#'
-                className='hover:text-zinc-900 dark:hover:text-zinc-100'
-              >
-                Privacidade
-              </a>
-            </li>
-          </ul>
-        </div>
-      </div>
-      <div className='max-w-7xl mx-auto px-4 lg:px-8 mt-10 pt-6 border-t border-zinc-200/70 dark:border-zinc-800/70 text-xs text-zinc-500 flex flex-wrap justify-between gap-2'>
-        <span>© 2026 Seara Finance.</span>
-        <span>Feito com ♥</span>
       </div>
     </footer>
   );
@@ -787,6 +891,7 @@ export default function LandingPage({ onSignup }: { onSignup: () => void }) {
       <LandingTrust />
       <LandingFeatures />
       <LandingHow />
+      <LandingPricing onSignup={onSignup} />
       <LandingFaq />
       <LandingCTA onSignup={onSignup} />
       <LandingFooter />

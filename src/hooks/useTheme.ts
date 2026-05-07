@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 
 type Theme = 'light' | 'dark';
 
-const STORAGE_KEY = 'seara-finance-theme';
+const STORAGE_KEY = 'finzap-theme';
 
 function getInitialTheme(): Theme {
     if (typeof window === 'undefined') return 'dark';

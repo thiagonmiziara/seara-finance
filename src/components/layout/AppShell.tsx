@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { useMigration } from '@/hooks/useMigration';
 import { useRecurringBillsSync } from '@/hooks/useRecurringBillsSync';
 import { WhatsAppOnboardingModal } from '@/components/WhatsAppOnboardingModal';
+import { DueDebtsReminderModal } from '@/components/DueDebtsReminderModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { NavigationProvider, useNavigation } from './navigation';
 import { PeriodProvider } from './period-context';
@@ -15,6 +16,8 @@ const DebtsPage = lazy(() => import('@/pages/DebtsPage'));
 const CardsPage = lazy(() => import('@/pages/CardsPage'));
 const RecurringBillsPage = lazy(() => import('@/pages/RecurringBillsPage'));
 const CategoriesPage = lazy(() => import('@/pages/CategoriesPage'));
+const BillingPage = lazy(() => import('@/pages/BillingPage'));
+const AdminPromptsPage = lazy(() => import('@/pages/AdminPromptsPage'));
 
 function PageLoader() {
   return (
@@ -34,6 +37,7 @@ function ShellContent() {
   return (
     <div className='min-h-screen bg-background'>
       <WhatsAppOnboardingModal />
+      <DueDebtsReminderModal />
       <div className='flex'>
         <Sidebar />
 
@@ -52,6 +56,8 @@ function ShellContent() {
                 {current === 'cartoes' && <CardsPage />}
                 {current === 'contas-fixas' && <RecurringBillsPage />}
                 {current === 'categorias' && <CategoriesPage />}
+                {current === 'billing' && <BillingPage />}
+                {current === 'admin-prompts' && <AdminPromptsPage />}
               </Suspense>
             </div>
           </main>

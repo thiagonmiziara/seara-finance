@@ -22,9 +22,9 @@ export function AutoCategorySuggestion({ pattern, category, onDismiss }: AutoCat
   if (activated) {
     return (
       <div className="flex items-center gap-2 px-4 py-3 bg-card border-l-[3px]
-                       border-emerald-500 rounded-r-lg transition-opacity duration-300">
-        <Check className="w-4 h-4 text-emerald-500" />
-        <span className="text-sm text-emerald-500">Regra criada com sucesso! ✓</span>
+                       border-blue-500 rounded-r-lg transition-opacity duration-300">
+        <Check className="w-4 h-4 text-blue-500" />
+        <span className="text-sm text-blue-500">Regra criada com sucesso! ✓</span>
       </div>
     );
   }
@@ -32,12 +32,12 @@ export function AutoCategorySuggestion({ pattern, category, onDismiss }: AutoCat
   return (
     <div
       className="flex items-center justify-between px-4 py-3 bg-card
-                 border-l-[3px] border-emerald-500 rounded-r-lg border border-border/50"
+                 border-l-[3px] border-blue-500 rounded-r-lg border border-border/50"
       role="alert"
       aria-live="polite"
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">
-        <Bot className="w-4 h-4 text-emerald-500 shrink-0" />
+        <Bot className="w-4 h-4 text-blue-500 shrink-0" />
         <span className="text-sm text-foreground truncate">
           Você categorizou &quot;{pattern}&quot; como {category} 3 vezes. Deseja criar uma regra automática?
         </span>
@@ -46,7 +46,7 @@ export function AutoCategorySuggestion({ pattern, category, onDismiss }: AutoCat
         <Button
           size="sm"
           onClick={handleActivate}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs"
+          className="bg-blue-600 hover:bg-blue-500 text-white text-xs"
         >
           Ativar ✓
         </Button>

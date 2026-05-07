@@ -6,21 +6,30 @@ import {
   useContext,
   ReactNode,
 } from 'react';
-import {
-  collection,
-  addDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  where,
-  getDocs,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from './useAuth';
 import { useAccount } from './useAccount';
 import { CATEGORIES as DEFAULT_CATEGORIES } from '@/lib/categories';
 
 type Category = { value: string; label: string; color: string; id?: string };
+
+const PALETTE = [
+  '#2563eb',
+  '#2563eb',
+  '#ef4444',
+  '#f59e0b',
+  '#8b5cf6',
+  '#e11d48',
+  '#0ea5a4',
+  '#06b6d4',
+  '#0ea5e9',
+  '#f97316',
+  '#3b82f6',
+  '#7c3aed',
+  '#ef7b45',
+  '#1e293b',
+  '#374151',
+];
 
 function slugify(value: string) {
   return (
@@ -30,6 +39,23 @@ function slugify(value: string) {
       .replace(/(^-|-$)/g, '')
       .slice(0, 40) || 'categoria'
   );
+}
+
+function pickRandomColor(existing: string[]) {
+  const used = new Set(existing.map((c) => c.toLowerCase()));
+  const options = PALETTE.filter((p) => !used.has(p.toLowerCase()));
+  if (options.length > 0) {
+    return options[Math.floor(Math.random() * options.length)];
+  }
+  for (let i = 0; i < 10; i++) {
+    const rand =
+      '#' +
+      Math.floor(Math.random() * 0xffffff)
+        .toString(16)
+        .padStart(6, '0');
+    if (!used.has(rand.toLowerCase())) return rand;
+  }
+  return '#374151';
 }
 
 type CategoriesContextValue = {
@@ -44,375 +70,178 @@ const CategoriesContext = createContext<CategoriesContextValue | undefined>(
   undefined,
 );
 
-function useCategoriesInternal() {
+interface CategoryRow {
+  id: string;
+  value: string;
+  label: string;
+  color: string;
+}
+
+function mergeWithDefaults(custom: Category[]): Category[] {
+  const merged = new Map<string, Category>();
+  DEFAULT_CATEGORIES.forEach((c) => merged.set(c.value, { ...c }));
+  custom.forEach((c) => merged.set(c.value, c));
+  return Array.from(merged.values());
+}
+
+function useCategoriesInternal(): CategoriesContextValue {
   const { user } = useAuth();
-  const { accountType } = useAccount();
+  const { accountId } = useAccount();
   const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // load any locally saved categories first so they appear immediately
-    const LOCAL_KEY = 'seara:categories';
-    try {
-      const raw = localStorage.getItem(LOCAL_KEY);
-      if (raw) {
-        const localCats = JSON.parse(raw) as Category[];
-        if (Array.isArray(localCats) && localCats.length > 0) {
-          setCategories((prev) => {
-            // merge unique by value
-            const map = new Map<string, Category>();
-            prev.forEach((c) => map.set(c.value, c));
-            localCats.forEach((c) => map.set(c.value, c));
-            return Array.from(map.values());
-          });
-        }
-      }
-    } catch (e) {
-      // ignore localStorage errors
-    }
-
-    if (!user) {
+    if (!user || !accountId) {
       setCategories(DEFAULT_CATEGORIES);
       setLoading(false);
       return;
     }
 
-    const q = query(
-      collection(db, 'users', user.id, 'accounts', accountType, 'categories'),
-      orderBy('label', 'asc'),
-    );
+    let cancelled = false;
+    setLoading(true);
 
-    const unsub = onSnapshot(
-      q,
-      async (snap) => {
-        if (snap.empty) {
-          // Merge defaults with any custom/local categories already in state
-          setCategories((prev) => {
-            const merged = new Map<string, Category>();
-            DEFAULT_CATEGORIES.forEach((c) => merged.set(c.value, { ...c }));
-            prev.forEach((c) => {
-              if (!DEFAULT_CATEGORIES.find((d) => d.value === c.value)) {
-                merged.set(c.value, c);
-              }
-            });
-            return Array.from(merged.values());
-          });
-          setLoading(false);
-          return;
-        }
-
-        const cats: Category[] = snap.docs.map((d) => ({
-          id: d.id,
-          ...(d.data() as any),
-        }));
-
-        // Merge any locally stored categories into Firestore-backed list and try to persist them
-        const LOCAL_KEY = 'seara:categories';
-        try {
-          const raw = localStorage.getItem(LOCAL_KEY);
-          const localCats = raw ? (JSON.parse(raw) as Category[]) : [];
-
-          // determine which local cats are not in snapshot
-          const snapValues = new Set(cats.map((c) => c.value));
-          const toSync = localCats.filter((lc) => !snapValues.has(lc.value));
-
-          for (const lc of toSync) {
-            try {
-              const collRef = collection(
-                db,
-                'users',
-                user.id,
-                'accounts',
-                accountType,
-                'categories',
-              );
-              await addDoc(collRef, {
-                value: lc.value,
-                label: lc.label,
-                color: lc.color || '#374151',
-                createdAt: new Date().toISOString(),
-              });
-            } catch (e) {
-              // if sync fails, keep local
-              console.error('Failed to sync local category to Firestore', e);
-            }
-          }
-
-          // clear local storage after attempting sync
-          if (toSync.length > 0) {
-            localStorage.removeItem(LOCAL_KEY);
-          }
-        } catch (e) {
-          // ignore localStorage parse errors
-        }
-
-        // Merge defaults with Firestore cats (defaults first, Firestore overrides)
-        const merged = new Map<string, Category>();
-        DEFAULT_CATEGORIES.forEach((c) => merged.set(c.value, { ...c }));
-        cats.forEach((c) => merged.set(c.value, c));
-        setCategories(Array.from(merged.values()));
+    const load = async () => {
+      const { data, error: err } = await supabase
+        .from('categories')
+        .select('id, value, label, color')
+        .eq('account_id', accountId)
+        .order('label', { ascending: true });
+      if (cancelled) return;
+      if (err) {
+        setError(err as unknown as Error);
         setLoading(false);
-      },
-      (e) => {
-        setError(e as any);
-        setLoading(false);
-      },
-    );
+        return;
+      }
+      setCategories(mergeWithDefaults((data as CategoryRow[]) ?? []));
+      setLoading(false);
+    };
 
-    return () => unsub();
-  }, [user, accountType]);
+    load();
+
+    const channel = supabase
+      .channel(`categories:${accountId}:${crypto.randomUUID()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'categories',
+          filter: `account_id=eq.${accountId}`,
+        },
+        () => {
+          load();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [user, accountId]);
 
   const addCategory = useCallback(
     async ({ label, color }: { label: string; color?: string }) => {
       const valueBase = slugify(label);
       let finalValue = valueBase;
 
-      // pick a random color that's not already used
-      function pickRandomColor(existing: string[]) {
-        const palette = [
-          '#16a34a', // green
-          '#2563eb', // blue
-          '#ef4444', // red
-          '#f59e0b', // amber
-          '#8b5cf6', // violet
-          '#e11d48',
-          '#0ea5a4',
-          '#06b6d4',
-          '#84cc16',
-          '#f97316',
-          '#10b981',
-          '#7c3aed',
-          '#ef7b45',
-          '#1e293b',
-          '#374151',
-        ];
-
-        const used = new Set(existing.map((c) => c.toLowerCase()));
-        const options = palette.filter((p) => !used.has(p.toLowerCase()));
-        if (options.length > 0) {
-          return options[Math.floor(Math.random() * options.length)];
+      if (!user || !accountId) {
+        // local-only fallback (não persiste server-side)
+        let i = 1;
+        while (categories.find((c) => c.value === finalValue)) {
+          finalValue = `${valueBase}-${i}`;
+          i += 1;
         }
-
-        // fallback: generate random hex that's not in used
-        for (let i = 0; i < 10; i++) {
-          const rand =
-            '#' +
-            Math.floor(Math.random() * 0xffffff)
-              .toString(16)
-              .padStart(6, '0');
-          if (!used.has(rand.toLowerCase())) return rand;
-        }
-        return '#374151';
-      }
-
-      if (user) {
-        try {
-          const collRef = collection(
-            db,
-            'users',
-            user.id,
-            'accounts',
-            accountType,
-            'categories',
-          );
-
-          // quick check for existing value
-          const existing = await getDocs(
-            query(collRef, where('value', '==', valueBase)),
-          );
-          if (!existing.empty) {
-            let i = 1;
-            while (true) {
-              const candidate = `${valueBase}-${i}`;
-              const ex = await getDocs(
-                query(collRef, where('value', '==', candidate)),
-              );
-              if (ex.empty) {
-                finalValue = candidate;
-                break;
-              }
-              i += 1;
-            }
-          }
-
-          // determine chosen color avoiding duplicates
-          const existingColors = (
-            (await getDocs(query(collRef))).docs.map(
-              (d) => (d.data() as any).color,
-            ) || []
-          ).filter(Boolean) as string[];
-          const chosenColor =
+        const newCat: Category = {
+          value: finalValue,
+          label,
+          color:
             color ||
-            pickRandomColor(
-              existingColors.concat(DEFAULT_CATEGORIES.map((c) => c.color)),
-            );
-
-          const docRef = await addDoc(collRef, {
-            value: finalValue,
-            label,
-            color: chosenColor,
-            createdAt: new Date().toISOString(),
-          });
-
-          const newCat = {
-            id: docRef.id,
-            value: finalValue,
-            label,
-            color: chosenColor,
-          };
-          setCategories((prev) => {
-            const next = [
-              ...prev.filter((c) => c.value !== newCat.value),
-              newCat,
-            ];
-            try {
-              localStorage.setItem(
-                'seara:categories',
-                JSON.stringify(
-                  next.filter(
-                    (c) => !DEFAULT_CATEGORIES.find((d) => d.value === c.value),
-                  ),
-                ),
-              );
-            } catch (e) {}
-            return next;
-          });
-          return newCat;
-        } catch (e) {
-          // If Firestore write fails, fall through to local creation
-          console.error(
-            'Failed to persist category to Firestore, falling back to local:',
-            e,
-          );
-        }
+            pickRandomColor([
+              ...categories.map((c) => c.color),
+              ...DEFAULT_CATEGORIES.map((c) => c.color),
+            ]),
+        };
+        setCategories((prev) => [...prev, newCat]);
+        return newCat;
       }
 
-      // local fallback (no user or firestore error)
-      // ensure local uniqueness
-      let i = 1;
-      while (categories.find((c) => c.value === finalValue)) {
-        finalValue = `${valueBase}-${i}`;
-        i += 1;
+      // ensure value uniqueness
+      const { data: existing, error: existingErr } = await supabase
+        .from('categories')
+        .select('value')
+        .eq('account_id', accountId);
+      if (existingErr) throw existingErr;
+      const usedValues = new Set(
+        (existing ?? []).map((r: { value: string }) => r.value),
+      );
+      let attempt = 1;
+      while (usedValues.has(finalValue)) {
+        finalValue = `${valueBase}-${attempt}`;
+        attempt++;
       }
 
-      const newCat = {
-        value: finalValue,
-        label,
-        color:
-          color ||
-          pickRandomColor([
-            ...categories.map((c) => c.color).filter(Boolean),
-            ...DEFAULT_CATEGORIES.map((c) => c.color),
-          ]),
-      } as Category;
-      setCategories((prev) => {
-        const next = [...prev.filter((c) => c.value !== newCat.value), newCat];
-        try {
-          // persist only custom categories to localStorage
-          localStorage.setItem(
-            'seara:categories',
-            JSON.stringify(
-              next.filter(
-                (c) => !DEFAULT_CATEGORIES.find((d) => d.value === c.value),
-              ),
-            ),
-          );
-        } catch (e) {
-          // ignore storage errors
-        }
-        return next;
-      });
+      const usedColors = (existing ?? [])
+        .map((r: any) => r.color as string | undefined)
+        .filter(Boolean) as string[];
+      const chosenColor =
+        color ||
+        pickRandomColor([
+          ...usedColors,
+          ...DEFAULT_CATEGORIES.map((c) => c.color),
+        ]);
+
+      const { data: inserted, error: insertErr } = await supabase
+        .from('categories')
+        .insert({
+          account_id: accountId,
+          value: finalValue,
+          label,
+          color: chosenColor,
+        })
+        .select('id, value, label, color')
+        .single();
+      if (insertErr) throw insertErr;
+
+      const newCat: Category = {
+        id: inserted.id,
+        value: inserted.value,
+        label: inserted.label,
+        color: inserted.color,
+      };
+      setCategories((prev) => [
+        ...prev.filter((c) => c.value !== newCat.value),
+        newCat,
+      ]);
       return newCat;
     },
-    [user, categories, accountType],
+    [user, accountId, categories],
   );
 
   const deleteCategory = useCallback(
     async (value: string) => {
-      // Prevent deletion of default categories
       if (DEFAULT_CATEGORIES.some((d) => d.value === value)) {
-        return;
+        return; // nunca apaga default
       }
-
-      // If user is not logged, just remove from localStorage and state
-      if (!user) {
-        try {
-          const LOCAL_KEY = 'seara:categories';
-          const raw = localStorage.getItem(LOCAL_KEY);
-          const localCats: Category[] = raw ? JSON.parse(raw) : [];
-          const next = localCats.filter((c) => c.value !== value);
-          localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
-        } catch (e) {
-          // ignore
-        }
+      if (!user || !accountId) {
         setCategories((prev) => prev.filter((c) => c.value !== value));
         return;
       }
-
-      try {
-        const q = query(
-          collection(
-            db,
-            'users',
-            user.id,
-            'accounts',
-            accountType,
-            'categories',
-          ),
-          where('value', '==', value),
-        );
-        const snap = await getDocs(q);
-
-        if (snap.empty) {
-          // nothing in firestore; still remove locally
-          setCategories((prev) => prev.filter((c) => c.value !== value));
-          try {
-            const LOCAL_KEY = 'seara:categories';
-            const raw = localStorage.getItem(LOCAL_KEY);
-            const localCats: Category[] = raw ? JSON.parse(raw) : [];
-            const next = localCats.filter((c) => c.value !== value);
-            localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
-          } catch (e) {}
-          return;
-        }
-
-        const { deleteDoc } = await import('firebase/firestore');
-        // delete all matching documents (should be at most one)
-        for (const d of snap.docs) {
-          await deleteDoc(d.ref);
-        }
-
-        // after successful deletion from Firestore, update local state/storage
-        setCategories((prev) => prev.filter((c) => c.value !== value));
-        try {
-          const LOCAL_KEY = 'seara:categories';
-          const raw = localStorage.getItem(LOCAL_KEY);
-          const localCats: Category[] = raw ? JSON.parse(raw) : [];
-          const next = localCats.filter((c) => c.value !== value);
-          localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
-        } catch (e) {}
-      } catch (e: any) {
-        // If deletion fails (for example due to Firestore permissions),
-        // fallback to removing the category locally and do not log to console.
-        try {
-          const LOCAL_KEY = 'seara:categories';
-          const raw = localStorage.getItem(LOCAL_KEY);
-          const localCats: Category[] = raw ? JSON.parse(raw) : [];
-          const next = localCats.filter((c) => c.value !== value);
-          localStorage.setItem(LOCAL_KEY, JSON.stringify(next));
-        } catch (e2) {
-          // ignore localStorage errors
-        }
-        setCategories((prev) => prev.filter((c) => c.value !== value));
-        // swallow original error to avoid console noise
-        return;
+      const { error: delErr } = await supabase
+        .from('categories')
+        .delete()
+        .eq('account_id', accountId)
+        .eq('value', value);
+      if (delErr) {
+        // swallow and remove locally to avoid noise
       }
+      setCategories((prev) => prev.filter((c) => c.value !== value));
     },
-    [user, accountType],
+    [user, accountId],
   );
 
-  return { categories, loading, error, addCategory, deleteCategory } as const;
+  return { categories, loading, error, addCategory, deleteCategory };
 }
 
 export function CategoriesProvider({ children }: { children: ReactNode }) {

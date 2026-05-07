@@ -1,0 +1,8 @@
+node_modules
+media
+models
+*.log
+.env
+.env.local
+tsconfig.tsbuildinfo
+.!*

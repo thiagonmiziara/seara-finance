@@ -14,6 +14,8 @@ import {
   CreditCard,
   Repeat,
   Tags,
+  Crown,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -23,7 +25,9 @@ export type RouteId =
   | 'dividas'
   | 'cartoes'
   | 'contas-fixas'
-  | 'categorias';
+  | 'categorias'
+  | 'billing'
+  | 'admin-prompts';
 
 export interface NavItem {
   id: RouteId;
@@ -31,6 +35,19 @@ export interface NavItem {
   shortLabel: string;
   icon: LucideIcon;
   path: string;
+  /** Se true, só aparece pra admins (allow-list em ADMIN_EMAILS). */
+  adminOnly?: boolean;
+}
+
+export const ADMIN_EMAILS = new Set([
+  'thiagonmiziara@gmail.com',
+  'thiagonmiziara@mail.com',
+  'thiago.miziara@arosapp.ai',
+]);
+
+export function isAdminEmail(email: string | undefined | null): boolean {
+  if (!email) return false;
+  return ADMIN_EMAILS.has(email.trim().toLowerCase());
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -40,6 +57,8 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'cartoes', label: 'Cartões', shortLabel: 'Cartões', icon: CreditCard, path: '/cartoes' },
   { id: 'contas-fixas', label: 'Contas fixas', shortLabel: 'Fixas', icon: Repeat, path: '/contas-fixas' },
   { id: 'categorias', label: 'Categorias', shortLabel: 'Cat.', icon: Tags, path: '/categorias' },
+  { id: 'billing', label: 'Assinatura', shortLabel: 'Plano', icon: Crown, path: '/billing' },
+  { id: 'admin-prompts', label: 'Prompts do bot', shortLabel: 'Prompts', icon: Sparkles, path: '/admin/prompts', adminOnly: true },
 ];
 
 const PATH_TO_ID: Record<string, RouteId> = NAV_ITEMS.reduce(

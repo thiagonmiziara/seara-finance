@@ -74,6 +74,15 @@ export interface FinanceContextType {
   };
 }
 
+export const debtPaymentSchema = z.object({
+  installmentNumber: z.number().int().positive(),
+  paidAt: z.string(), // ISO string — when this installment was marked paid
+  amount: z.number(),
+  transactionId: z.string().optional(),
+  createdTransaction: z.boolean().optional(),
+});
+export type DebtPayment = z.infer<typeof debtPaymentSchema>;
+
 export const debtSchema = z.object({
   id: z.string().uuid(),
   description: z.string().min(1, 'Descrição é obrigatória'),
@@ -87,11 +96,16 @@ export const debtSchema = z.object({
   dueDate: z.string(), // ISO string
   createdAt: z.string(), // ISO string
   cardId: z.string().optional(),
+  paymentHistory: z.array(debtPaymentSchema).optional(),
 });
 
 export type Debt = z.infer<typeof debtSchema>;
 
-export const debtFormSchema = debtSchema.omit({ id: true, createdAt: true });
+export const debtFormSchema = debtSchema.omit({
+  id: true,
+  createdAt: true,
+  paymentHistory: true,
+});
 export type DebtFormValues = z.infer<typeof debtFormSchema>;
 
 export const CARD_BRANDS = [

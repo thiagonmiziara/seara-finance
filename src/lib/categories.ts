@@ -1,5 +1,5 @@
 export const CATEGORIES = [
-  { value: 'salario', label: 'Salário', color: '#16a34a' }, // green
+  { value: 'salario', label: 'Salário', color: '#2563eb' }, // green
   { value: 'compras', label: 'Compras', color: '#2563eb' }, // blue
   { value: 'alimentacao', label: 'Alimentação', color: '#ef4444' }, // red
   { value: 'transporte', label: 'Transporte', color: '#f59e0b' }, // amber

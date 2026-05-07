@@ -88,7 +88,7 @@ export function DebtProgressChart({ debts }: DebtProgressChartProps) {
                                 <Bar
                                     dataKey='pago'
                                     stackId="a"
-                                    fill='#10b981' // emerald-500
+                                    fill='#3b82f6' // blue-500
                                     name='Valor Pago'
                                     radius={[0, 0, 4, 4]}
                                 />

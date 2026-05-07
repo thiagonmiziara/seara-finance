@@ -17,23 +17,54 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { DebtFormValues, debtFormSchema } from '@/types';
+import { Debt, DebtFormValues, debtFormSchema } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 
 interface AddDebtModalProps {
-    onAddDebt: (data: DebtFormValues) => Promise<any>;
+    onAddDebt?: (data: DebtFormValues) => Promise<any>;
+    onUpdateDebt?: (input: { id: string; data: Partial<DebtFormValues> }) => Promise<any>;
+    /** When set, modal renders in edit mode and pre-fills with this debt. */
+    editDebt?: Debt;
+    /** Replace the default "Nova Dívida" trigger with anything (e.g. an icon button). */
+    trigger?: ReactNode;
     isAdding?: boolean;
+    isUpdating?: boolean;
     className?: string;
 }
 
 export function AddDebtModal({
     onAddDebt,
+    onUpdateDebt,
+    editDebt,
+    trigger,
     isAdding,
+    isUpdating,
     className,
 }: AddDebtModalProps) {
     const [open, setOpen] = useState(false);
+    const isEdit = !!editDebt;
+    const initialValues: DebtFormValues = isEdit
+        ? {
+              description: editDebt!.description,
+              totalAmount: editDebt!.totalAmount,
+              installments: editDebt!.installments,
+              installmentAmount: editDebt!.installmentAmount,
+              paidInstallments: editDebt!.paidInstallments ?? 0,
+              status: editDebt!.status,
+              dueDate: editDebt!.dueDate,
+              cardId: editDebt!.cardId,
+          }
+        : {
+              description: '',
+              totalAmount: 0,
+              installments: 1,
+              installmentAmount: 0,
+              status: 'a_pagar',
+              dueDate: new Date().toISOString().split('T')[0],
+          };
+
     const {
         register,
         handleSubmit,
@@ -44,25 +75,32 @@ export function AddDebtModal({
         formState: { errors },
     } = useForm<DebtFormValues>({
         resolver: zodResolver(debtFormSchema),
-        defaultValues: {
-            description: '',
-            totalAmount: 0,
-            installments: 1,
-            installmentAmount: 0,
-            status: 'a_pagar',
-            dueDate: new Date().toISOString().split('T')[0],
-        },
+        defaultValues: initialValues,
     });
 
-    const [amountDisplay, setAmountDisplay] = useState('');
-    const [installmentAmountDisplay, setInstallmentAmountDisplay] = useState('');
+    const [amountDisplay, setAmountDisplay] = useState(
+        isEdit ? editDebt!.totalAmount.toFixed(2).replace('.', ',') : '',
+    );
+    const [installmentAmountDisplay, setInstallmentAmountDisplay] = useState(
+        isEdit ? editDebt!.installmentAmount.toFixed(2).replace('.', ',') : '',
+    );
 
-    // Auto-calculate installment amount
+    // When opening the edit modal, reset fields to the current debt values
+    // (the Debt object can change between mounts if the parent re-renders).
+    useEffect(() => {
+        if (!open || !isEdit) return;
+        reset(initialValues);
+        setAmountDisplay(editDebt!.totalAmount.toFixed(2).replace('.', ','));
+        setInstallmentAmountDisplay(
+            editDebt!.installmentAmount.toFixed(2).replace('.', ','),
+        );
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, editDebt?.id]);
+
     const totalAmount = watch('totalAmount');
     const installments = watch('installments');
 
     useEffect(() => {
-        // Only auto-calc if user hasn't typed a custom value or if total/installments change
         if (totalAmount && installments > 0) {
             const calculated = Number((totalAmount / installments).toFixed(2));
             setValue('installmentAmount', calculated);
@@ -72,14 +110,19 @@ export function AddDebtModal({
 
     const onSubmit = async (data: DebtFormValues) => {
         try {
-            await onAddDebt(data);
+            if (isEdit && onUpdateDebt) {
+                await onUpdateDebt({ id: editDebt!.id, data });
+            } else if (onAddDebt) {
+                await onAddDebt(data);
+            }
             setOpen(false);
-            reset();
-            setAmountDisplay('');
-            setInstallmentAmountDisplay('');
+            if (!isEdit) {
+                reset();
+                setAmountDisplay('');
+                setInstallmentAmountDisplay('');
+            }
         } catch (error) {
-            console.error('Failed to add debt:', error);
-            // handled by mutation
+            console.error('Failed to save debt:', error);
         }
     };
 
@@ -96,16 +139,22 @@ export function AddDebtModal({
         onChange(isNaN(numeric) ? 0 : numeric);
     };
 
+    const isLoading = isEdit ? isUpdating : isAdding;
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className={className}>Nova Dívida</Button>
+                {trigger ?? <Button className={className}>Nova Dívida</Button>}
             </DialogTrigger>
             <DialogContent className='sm:max-w-[425px]'>
                 <DialogHeader>
-                    <DialogTitle>Adicionar Dívida</DialogTitle>
+                    <DialogTitle>
+                        {isEdit ? 'Editar Dívida' : 'Adicionar Dívida'}
+                    </DialogTitle>
                     <DialogDescription>
-                        Insira os detalhes da dívida aqui.
+                        {isEdit
+                            ? 'Atualize os campos da dívida.'
+                            : 'Insira os detalhes da dívida aqui.'}
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit(onSubmit)}>
@@ -220,6 +269,23 @@ export function AddDebtModal({
                             </div>
                         </div>
 
+                        {isEdit && (
+                            <div className='grid grid-cols-4 items-center gap-4'>
+                                <Label htmlFor='paidInstallments' className='text-right'>
+                                    Parcelas pagas
+                                </Label>
+                                <div className='col-span-3'>
+                                    <Input
+                                        id='paidInstallments'
+                                        type='number'
+                                        min='0'
+                                        max={watch('installments')}
+                                        {...register('paidInstallments', { valueAsNumber: true })}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
                         <div className='grid grid-cols-4 items-center gap-4 mt-2'>
                             <Label htmlFor='status' className='text-right'>
                                 Status
@@ -231,7 +297,7 @@ export function AddDebtModal({
                                     render={({ field }) => (
                                         <Select
                                             onValueChange={field.onChange}
-                                            defaultValue={field.value}
+                                            value={field.value}
                                         >
                                             <SelectTrigger>
                                                 <SelectValue placeholder='Selecione o status' />
@@ -271,8 +337,8 @@ export function AddDebtModal({
                     </div>
 
                     <DialogFooter>
-                        <Button type='submit' disabled={isAdding}>
-                            {isAdding ? 'Salvando...' : 'Salvar'}
+                        <Button type='submit' disabled={isLoading}>
+                            {isLoading ? 'Salvando...' : 'Salvar'}
                         </Button>
                     </DialogFooter>
                 </form>

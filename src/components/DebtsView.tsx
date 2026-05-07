@@ -1,8 +1,16 @@
+import { useState } from 'react';
 import { useDebts } from '@/hooks/useDebts';
 import { useCards } from '@/hooks/useCards';
 import { AddDebtModal } from '@/components/AddDebtModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Wallet,
@@ -12,11 +20,15 @@ import {
   Check,
   CheckCheck,
   Flag,
+  Pencil,
+  Undo2,
+  CalendarClock,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { Debt } from '@/types';
+import { Debt, DebtFormValues } from '@/types';
+import { getDebtStatusInfo } from '@/lib/debtStatus';
 
 function fmtBRL(value: number) {
   return new Intl.NumberFormat('pt-BR', {
@@ -28,7 +40,7 @@ function fmtBRL(value: number) {
 interface KpiCardProps {
   label: string;
   value: number;
-  tone: 'neutral' | 'success' | 'danger';
+  tone: 'neutral' | 'success' | 'danger' | 'info';
   icon: React.ComponentType<{ className?: string }>;
 }
 
@@ -45,6 +57,10 @@ function KpiCard({ label, value, tone, icon: Icon }: KpiCardProps) {
     danger: {
       iconWrap: 'bg-red-500/15 text-red-500',
       value: 'text-red-500',
+    },
+    info: {
+      iconWrap: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+      value: 'text-amber-600 dark:text-amber-400',
     },
   }[tone];
 
@@ -80,8 +96,11 @@ interface DebtCardProps {
   cardName?: string;
   onIncrement: () => Promise<any>;
   onSettle: () => Promise<any>;
-  onDelete: () => Promise<any>;
+  onDelete: () => void;
+  onUnmark: () => void;
+  onUpdate: (input: { id: string; data: Partial<DebtFormValues> }) => Promise<any>;
   isDeleting?: boolean;
+  isUpdating?: boolean;
 }
 
 function DebtCard({
@@ -90,7 +109,10 @@ function DebtCard({
   onIncrement,
   onSettle,
   onDelete,
+  onUnmark,
+  onUpdate,
   isDeleting,
+  isUpdating,
 }: DebtCardProps) {
   const passed =
     debt.status === 'pago'
@@ -102,6 +124,7 @@ function DebtCard({
   const remainingAmount = Math.max(0, debt.totalAmount - paidAmount);
   const isPaid = debt.status === 'pago' || remaining === 0;
   const firstDue = debt.dueDate ? parseISO(debt.dueDate) : null;
+  const canUnmark = (debt.paidInstallments ?? 0) > 0;
 
   return (
     <div
@@ -150,21 +173,31 @@ function DebtCard({
           </p>
         </div>
 
-        <ConfirmDialog
-          trigger={
-            <button
-              type='button'
-              className='shrink-0 -mr-1 -mt-1 inline-flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors'
-              aria-label={`Excluir dívida ${debt.description}`}
-            >
-              <Trash2 className='h-4 w-4' />
-            </button>
-          }
-          title='Excluir dívida?'
-          description={`A dívida "${debt.description}" será removida permanentemente.`}
-          onConfirm={onDelete}
-          isLoading={isDeleting}
-        />
+        <div className='flex items-center gap-1 shrink-0 -mr-1 -mt-1'>
+          <AddDebtModal
+            editDebt={debt}
+            onUpdateDebt={onUpdate}
+            isUpdating={isUpdating}
+            trigger={
+              <button
+                type='button'
+                className='inline-flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors'
+                aria-label={`Editar dívida ${debt.description}`}
+              >
+                <Pencil className='h-4 w-4' />
+              </button>
+            }
+          />
+          <button
+            type='button'
+            disabled={isDeleting}
+            onClick={onDelete}
+            className='inline-flex items-center justify-center h-9 w-9 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50'
+            aria-label={`Excluir dívida ${debt.description}`}
+          >
+            <Trash2 className='h-4 w-4' />
+          </button>
+        </div>
       </div>
 
       {/* Stats grid */}
@@ -249,6 +282,36 @@ function DebtCard({
             destructive={false}
             onConfirm={onSettle}
           />
+          {canUnmark && (
+            <Button
+              type='button'
+              variant='ghost'
+              size='sm'
+              className='sm:w-auto text-muted-foreground hover:text-foreground'
+              onClick={onUnmark}
+              disabled={isUpdating}
+              aria-label='Desmarcar última parcela'
+              title='Desmarcar última parcela paga'
+            >
+              <Undo2 className='mr-1.5 h-4 w-4' />
+              Desmarcar
+            </Button>
+          )}
+        </div>
+      )}
+      {isPaid && canUnmark && (
+        <div className='mt-4'>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='text-muted-foreground hover:text-foreground'
+            onClick={onUnmark}
+            disabled={isUpdating}
+          >
+            <Undo2 className='mr-1.5 h-4 w-4' />
+            Desmarcar última parcela
+          </Button>
         </div>
       )}
     </div>
@@ -275,11 +338,14 @@ export default function DebtsView() {
   const {
     debts,
     addDebt,
+    updateDebt,
     removeDebt,
     incrementInstallment,
     settleDebt,
+    unmarkLastInstallment,
     summary,
     isAdding,
+    isUpdating,
     isDeleting,
     isInitialLoading,
   } = useDebts();
@@ -287,6 +353,22 @@ export default function DebtsView() {
 
   const cardName = (cardId?: string) =>
     cardId ? cards.find((c) => c.id === cardId)?.name : undefined;
+
+  const [deleteTarget, setDeleteTarget] = useState<Debt | null>(null);
+  const [unmarkTarget, setUnmarkTarget] = useState<Debt | null>(null);
+  const [isMutatingDialog, setIsMutatingDialog] = useState(false);
+
+  // Sum of installmentAmounts whose due-this-month installment isn't paid yet
+  // (the parcels the user actually has to pay this calendar month).
+  const monthInstallmentsTotal = debts.reduce((acc, d) => {
+    const info = getDebtStatusInfo(d);
+    if (info.status === 'a_pagar' || info.status === 'em_atraso') {
+      if (info.monthInstallmentNumber !== null) {
+        acc += d.installmentAmount;
+      }
+    }
+    return acc;
+  }, 0);
 
   return (
     <div className='space-y-6 anim-fade-up'>
@@ -305,18 +387,25 @@ export default function DebtsView() {
 
       {/* KPIs */}
       {isInitialLoading ? (
-        <div className='grid gap-3 grid-cols-1 md:grid-cols-3'>
+        <div className='grid gap-3 grid-cols-2 lg:grid-cols-4'>
+          <Skeleton className='h-[100px] rounded-2xl' />
           <Skeleton className='h-[100px] rounded-2xl' />
           <Skeleton className='h-[100px] rounded-2xl' />
           <Skeleton className='h-[100px] rounded-2xl' />
         </div>
       ) : (
-        <div className='grid gap-3 grid-cols-1 md:grid-cols-3'>
+        <div className='grid gap-3 grid-cols-2 lg:grid-cols-4'>
           <KpiCard
             label='Total contratado'
             value={summary.total}
             tone='neutral'
             icon={Wallet}
+          />
+          <KpiCard
+            label='Parcelas do mês'
+            value={monthInstallmentsTotal}
+            tone='info'
+            icon={CalendarClock}
           />
           <KpiCard
             label='Restante a pagar'
@@ -352,12 +441,154 @@ export default function DebtsView() {
               cardName={cardName(debt.cardId)}
               onIncrement={() => incrementInstallment(debt)}
               onSettle={() => settleDebt(debt)}
-              onDelete={() => removeDebt(debt.id)}
+              onDelete={() => setDeleteTarget(debt)}
+              onUnmark={() => setUnmarkTarget(debt)}
+              onUpdate={updateDebt}
               isDeleting={isDeleting}
+              isUpdating={isUpdating}
             />
           ))}
         </div>
       )}
+
+      {/* Delete debt — choose between soft delete and revert balance */}
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open && !isMutatingDialog) setDeleteTarget(null);
+        }}
+      >
+        <DialogContent className='sm:max-w-[460px]'>
+          <DialogHeader>
+            <DialogTitle>Apagar dívida?</DialogTitle>
+            <DialogDescription>
+              "{deleteTarget?.description}" será removida.
+              {(deleteTarget?.paymentHistory?.length ?? 0) > 0 && (
+                <>
+                  {' '}
+                  {deleteTarget?.paymentHistory?.length}{' '}
+                  {deleteTarget?.paymentHistory?.length === 1
+                    ? 'parcela paga registrada'
+                    : 'parcelas pagas registradas'}{' '}
+                  no histórico.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className='flex flex-col gap-2 mt-1'>
+            <Button
+              type='button'
+              variant='outline'
+              disabled={isMutatingDialog}
+              onClick={async () => {
+                if (!deleteTarget) return;
+                setIsMutatingDialog(true);
+                try {
+                  await removeDebt({ id: deleteTarget.id, mode: 'soft' });
+                } finally {
+                  setIsMutatingDialog(false);
+                  setDeleteTarget(null);
+                }
+              }}
+            >
+              Apagar só a dívida (manter saldo)
+            </Button>
+            {(deleteTarget?.paymentHistory?.length ?? 0) > 0 && (
+              <Button
+                type='button'
+                variant='destructive'
+                disabled={isMutatingDialog}
+                onClick={async () => {
+                  if (!deleteTarget) return;
+                  setIsMutatingDialog(true);
+                  try {
+                    await removeDebt({
+                      id: deleteTarget.id,
+                      mode: 'revert',
+                    });
+                  } finally {
+                    setIsMutatingDialog(false);
+                    setDeleteTarget(null);
+                  }
+                }}
+              >
+                Apagar e reverter saldo
+              </Button>
+            )}
+            <Button
+              type='button'
+              variant='ghost'
+              disabled={isMutatingDialog}
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancelar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Unmark last installment — same soft/revert choice */}
+      <Dialog
+        open={!!unmarkTarget}
+        onOpenChange={(open) => {
+          if (!open && !isMutatingDialog) setUnmarkTarget(null);
+        }}
+      >
+        <DialogContent className='sm:max-w-[460px]'>
+          <DialogHeader>
+            <DialogTitle>Desmarcar última parcela?</DialogTitle>
+            <DialogDescription>
+              Parcela {unmarkTarget?.paidInstallments ?? 0}/
+              {unmarkTarget?.installments} de "
+              {unmarkTarget?.description}".
+            </DialogDescription>
+          </DialogHeader>
+          <div className='flex flex-col gap-2 mt-1'>
+            <Button
+              type='button'
+              variant='destructive'
+              disabled={isMutatingDialog}
+              onClick={async () => {
+                if (!unmarkTarget) return;
+                setIsMutatingDialog(true);
+                try {
+                  await unmarkLastInstallment(unmarkTarget, 'revert');
+                } finally {
+                  setIsMutatingDialog(false);
+                  setUnmarkTarget(null);
+                }
+              }}
+            >
+              Desmarcar e reverter saldo
+            </Button>
+            <Button
+              type='button'
+              variant='outline'
+              disabled={isMutatingDialog}
+              onClick={async () => {
+                if (!unmarkTarget) return;
+                setIsMutatingDialog(true);
+                try {
+                  await unmarkLastInstallment(unmarkTarget, 'soft');
+                } finally {
+                  setIsMutatingDialog(false);
+                  setUnmarkTarget(null);
+                }
+              }}
+            >
+              Só desmarcar (manter transação no saldo)
+            </Button>
+            <Button
+              type='button'
+              variant='ghost'
+              disabled={isMutatingDialog}
+              onClick={() => setUnmarkTarget(null)}
+            >
+              Cancelar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

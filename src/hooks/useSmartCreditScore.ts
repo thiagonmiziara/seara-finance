@@ -31,7 +31,7 @@ export const getStatusCategory = (score: number): StatusCategory => {
 export const getStatusColor = (status: StatusCategory): string => {
   switch (status) {
     case 'Saudável':
-      return 'bg-emerald-500';
+      return 'bg-blue-500';
     case 'Atenção':
       return 'bg-yellow-500';
     case 'Risco':

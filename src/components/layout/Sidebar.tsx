@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { NAV_ITEMS, useNavigation } from './navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { NAV_ITEMS, isAdminEmail, useNavigation } from './navigation';
 
 interface SidebarProps {
   onNavigate?: () => void;
@@ -9,7 +10,14 @@ interface SidebarProps {
 
 export function Sidebar({ onNavigate }: SidebarProps) {
   const { current, navigate } = useNavigation();
+  const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
+
+  const visibleItems = useMemo(
+    () =>
+      NAV_ITEMS.filter((item) => !item.adminOnly || isAdminEmail(user?.email)),
+    [user?.email],
+  );
 
   const ToggleIcon = collapsed ? PanelLeftOpen : PanelLeftClose;
 
@@ -28,13 +36,13 @@ export function Sidebar({ onNavigate }: SidebarProps) {
           aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
           title={collapsed ? 'Expandir menu' : 'Recolher menu'}
           className={cn(
-            'relative flex h-9 w-9 items-center justify-center rounded-lg shrink-0 transition-colors overflow-hidden',
-            'bg-black hover:bg-primary/15 group-hover/sidebar:bg-primary/15',
+            'relative flex h-9 w-9 items-center justify-center rounded-lg shrink-0 transition-colors overflow-hidden shadow-soft',
+            'hover:ring-2 hover:ring-primary/30 group-hover/sidebar:ring-2 group-hover/sidebar:ring-primary/30',
           )}
         >
           <img
-            src='/icone.png'
-            alt='Seara Finance'
+            src='/finzap-icon.svg'
+            alt='Finzap'
             className={cn(
               'absolute inset-0 m-auto h-full w-full object-contain transition-opacity duration-200',
               'group-hover/sidebar:opacity-0',
@@ -50,16 +58,16 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         </button>
         {!collapsed && (
           <div className='flex flex-col leading-tight overflow-hidden'>
-            <span className='text-base font-extrabold tracking-tight'>Seara</span>
+            <span className='text-base font-extrabold tracking-tight'>Finzap</span>
             <span className='text-[11px] uppercase tracking-widest text-muted-foreground font-semibold'>
-              Finance
+              No zap
             </span>
           </div>
         )}
       </div>
 
       <nav className='flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-hide'>
-        {NAV_ITEMS.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon;
           const isActive = current === item.id;
           return (

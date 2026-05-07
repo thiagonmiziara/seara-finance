@@ -27,107 +27,115 @@ body {
 
 @layer base {
   :root {
-    /* Premium Light Theme — Emerald/Green Finance */
-    --background: 150 20% 98%;
-    --foreground: 160 30% 8%;
+    /* Elegant light theme — Deep sapphire + champagne gold on cool ivory */
+    --background: 220 28% 98%;
+    --foreground: 220 35% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 160 30% 8%;
+    --card-foreground: 220 35% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 160 30% 8%;
+    --popover-foreground: 220 35% 11%;
 
-    --primary: 152 60% 36%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 216 62% 32%;
+    --primary-foreground: 220 30% 98%;
 
-    --secondary: 150 20% 95%;
-    --secondary-foreground: 160 30% 15%;
+    --secondary: 220 20% 94%;
+    --secondary-foreground: 220 30% 18%;
 
-    --muted: 150 15% 93%;
-    --muted-foreground: 160 10% 45%;
+    --muted: 220 18% 92%;
+    --muted-foreground: 220 12% 42%;
 
-    --accent: 150 25% 92%;
-    --accent-foreground: 152 60% 28%;
+    --accent: 216 50% 92%;
+    --accent-foreground: 216 60% 28%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 65% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
+    --warning: 38 88% 50%;
     --warning-foreground: 0 0% 100%;
-    --info: 217 91% 60%;
+    --info: 216 75% 50%;
     --info-foreground: 0 0% 100%;
 
-    --border: 150 15% 88%;
-    --input: 150 15% 88%;
-    --ring: 152 60% 36%;
+    --gold: 42 75% 50%;
+    --gold-foreground: 220 35% 11%;
+
+    --border: 220 18% 86%;
+    --input: 220 18% 86%;
+    --ring: 216 62% 36%;
 
     --radius: 0.875rem;
 
-    --shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.04), 0 2px 6px rgba(15, 23, 42, 0.04);
-    --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 8px 24px -8px rgba(15, 23, 42, 0.08);
-    --shadow-pop: 0 12px 32px -8px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.08);
+    --shadow-soft: 0 1px 2px rgba(20, 30, 60, 0.05), 0 2px 6px rgba(20, 30, 60, 0.05);
+    --shadow-card: 0 1px 3px rgba(20, 30, 60, 0.07), 0 8px 24px -8px rgba(20, 30, 60, 0.12);
+    --shadow-pop: 0 12px 32px -8px rgba(20, 30, 60, 0.20), 0 4px 12px rgba(20, 30, 60, 0.10);
 
     --brand-gradient:
-      radial-gradient(120% 100% at 0% 0%, rgba(34, 168, 92, 0.18), transparent 60%),
-      linear-gradient(180deg, hsl(0 0% 100%), hsl(150 25% 97%));
+      radial-gradient(120% 100% at 0% 0%, hsl(216 62% 32% / 0.10), transparent 60%),
+      radial-gradient(120% 100% at 100% 0%, hsl(42 75% 50% / 0.08), transparent 55%),
+      linear-gradient(180deg, hsl(0 0% 100%), hsl(220 28% 97%));
 
     /* Chart-specific colors */
     --chart-tooltip-bg: 0 0% 100%;
-    --chart-tooltip-border: 150 15% 88%;
-    --chart-tooltip-text: 160 30% 8%;
-    --chart-grid: 150 15% 88%;
+    --chart-tooltip-border: 220 18% 86%;
+    --chart-tooltip-text: 220 35% 11%;
+    --chart-grid: 220 18% 88%;
 
     color-scheme: light;
   }
 
   .dark {
-    /* Tailwind Zinc Theme with Green Primary */
-    --background: 240 5.9% 10%;
-    --foreground: 0 0% 98%;
+    /* Elegant dark theme — deep midnight sapphire + warm champagne */
+    --background: 220 35% 7%;
+    --foreground: 220 22% 96%;
 
-    --card: 240 3.7% 15.9%;
-    --card-foreground: 0 0% 98%;
+    --card: 220 30% 11%;
+    --card-foreground: 220 22% 96%;
 
-    --popover: 240 3.7% 15.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 220 30% 11%;
+    --popover-foreground: 220 22% 96%;
 
-    --primary: 88 80% 48%;
-    --primary-foreground: 240 5.9% 10%;
+    --primary: 216 70% 62%;
+    --primary-foreground: 220 35% 8%;
 
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 220 22% 16%;
+    --secondary-foreground: 220 22% 95%;
 
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    --muted: 220 22% 16%;
+    --muted-foreground: 220 10% 64%;
 
-    --accent: 88 80% 18%;
-    --accent-foreground: 88 80% 85%;
+    --accent: 220 30% 22%;
+    --accent-foreground: 216 70% 78%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 220 22% 96%;
 
-    --warning: 38 92% 56%;
-    --warning-foreground: 240 5.9% 10%;
-    --info: 217 91% 65%;
-    --info-foreground: 240 5.9% 10%;
+    --warning: 38 88% 60%;
+    --warning-foreground: 220 35% 8%;
+    --info: 216 80% 70%;
+    --info-foreground: 220 35% 8%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 88 80% 48%;
+    --gold: 42 78% 62%;
+    --gold-foreground: 220 35% 8%;
 
-    --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.25);
-    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.35), 0 8px 24px -8px rgba(0, 0, 0, 0.45);
-    --shadow-pop: 0 12px 32px -8px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.4);
+    --border: 220 22% 20%;
+    --input: 220 22% 20%;
+    --ring: 216 70% 62%;
+
+    --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.3);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4), 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+    --shadow-pop: 0 12px 32px -8px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.45);
 
     --brand-gradient:
-      radial-gradient(120% 100% at 0% 0%, rgba(132, 204, 22, 0.18), transparent 60%),
-      linear-gradient(180deg, hsl(240 3.7% 15.9%), hsl(240 5.9% 12%));
+      radial-gradient(120% 100% at 0% 0%, hsl(216 70% 62% / 0.18), transparent 60%),
+      radial-gradient(120% 100% at 100% 0%, hsl(42 78% 62% / 0.10), transparent 55%),
+      linear-gradient(180deg, hsl(220 30% 11%), hsl(220 35% 8%));
 
     /* Chart-specific colors */
-    --chart-tooltip-bg: 240 3.7% 10%;
-    --chart-tooltip-border: 240 3.7% 20%;
-    --chart-tooltip-text: 0 0% 100%;
-    --chart-grid: 240 3.7% 20%;
+    --chart-tooltip-bg: 220 30% 9%;
+    --chart-tooltip-border: 220 22% 22%;
+    --chart-tooltip-text: 220 22% 96%;
+    --chart-grid: 220 22% 22%;
 
     color-scheme: dark;
   }
@@ -147,7 +155,8 @@ body {
   }
 
   h1, h2, h3, .font-display {
-    letter-spacing: -0.01em;
+    letter-spacing: -0.012em;
+    font-feature-settings: 'ss01' 1, 'cv11' 1;
   }
 }
 
@@ -159,6 +168,17 @@ body {
 
   .brand-gradient {
     background-image: var(--brand-gradient);
+  }
+
+  .text-gold {
+    color: hsl(var(--gold));
+  }
+  .bg-gold {
+    background-color: hsl(var(--gold));
+    color: hsl(var(--gold-foreground));
+  }
+  .ring-gold {
+    --tw-ring-color: hsl(var(--gold) / 0.5);
   }
 
   .shadow-soft {
@@ -206,7 +226,7 @@ body {
     100% { background-position: 200% 0; }
   }
   .anim-shimmer {
-    background: linear-gradient(90deg, transparent, rgba(34,168,92,.15), transparent);
+    background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.18), hsl(var(--gold) / 0.16), transparent);
     background-size: 200% 100%;
     animation: shimmer 3s ease-in-out infinite;
   }
@@ -222,12 +242,20 @@ body {
   }
 
   .gradient-text {
-    background: linear-gradient(90deg, #22a85c, #46c279, #22a85c);
+    background: linear-gradient(90deg, hsl(216 62% 32%), hsl(42 75% 50%), hsl(216 62% 32%));
     background-size: 200% auto;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    animation: shimmer 4s linear infinite;
+    animation: shimmer 5s linear infinite;
+  }
+  .dark .gradient-text {
+    background: linear-gradient(90deg, hsl(216 70% 62%), hsl(42 78% 62%), hsl(216 70% 62%));
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 5s linear infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {

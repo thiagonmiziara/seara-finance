@@ -6,7 +6,7 @@ type ToastOptions = {
   onAction?: () => void | Promise<void>;
 };
 
-const CONTAINER_ID = 'seara-toast-container';
+const CONTAINER_ID = 'finzap-toast-container';
 
 function ensureContainer() {
   let container = document.getElementById(CONTAINER_ID);
@@ -36,7 +36,7 @@ export function showToast(opts: ToastOptions) {
   } = opts;
 
   const el = document.createElement('div');
-  el.className = 'seara-toast';
+  el.className = 'finzap-toast';
   el.style.minWidth = '200px';
   el.style.maxWidth = '320px';
   el.style.background =

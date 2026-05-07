@@ -398,18 +398,18 @@ export default function CardsView() {
                                                   isPaid
                                                     ? 'opacity-60'
                                                     : isNext
-                                                      ? 'bg-emerald-500/10'
+                                                      ? 'bg-blue-500/10'
                                                       : ''
                                                 }`}
                                               >
                                                 <div className='flex items-center gap-1.5 flex-1'>
                                                   {isPaid && (
-                                                    <div className='h-px w-3 bg-emerald-500 rounded' />
+                                                    <div className='h-px w-3 bg-blue-500 rounded' />
                                                   )}
                                                   <span
                                                     className={`transition-all duration-300 ${
                                                       isPaid
-                                                        ? 'line-through text-emerald-500/70'
+                                                        ? 'line-through text-blue-500/70'
                                                         : 'text-foreground/80'
                                                     }`}
                                                   >
@@ -420,7 +420,7 @@ export default function CardsView() {
                                                   <span
                                                     className={`font-semibold transition-all duration-300 ${
                                                       isPaid
-                                                        ? 'line-through text-emerald-500/70'
+                                                        ? 'line-through text-blue-500/70'
                                                         : 'text-foreground'
                                                     }`}
                                                   >
@@ -429,7 +429,7 @@ export default function CardsView() {
                                                     )}
                                                   </span>
                                                   {isPaid ? (
-                                                    <Check className='h-4 w-4 text-emerald-500' />
+                                                    <Check className='h-4 w-4 text-blue-500' />
                                                   ) : isNext ? (
                                                     <button
                                                       onClick={() =>
@@ -437,7 +437,7 @@ export default function CardsView() {
                                                           debt,
                                                         )
                                                       }
-                                                      className='text-emerald-500 hover:text-emerald-600 hover:scale-110 transition-all p-1 -m-1'
+                                                      className='text-blue-500 hover:text-blue-600 hover:scale-110 transition-all p-1 -m-1'
                                                       title='Pagar esta parcela'
                                                     >
                                                       <Check className='h-4 w-4' />
@@ -601,7 +601,7 @@ export default function CardsView() {
                                                 })),
                                               );
                                           }}
-                                          className='text-emerald-500 hover:text-emerald-400 disabled:opacity-50 transition-all p-1 -m-1'
+                                          className='text-blue-500 hover:text-blue-400 disabled:opacity-50 transition-all p-1 -m-1'
                                           title='Confirmar pagamento'
                                         >
                                           {isThisLoading ? (
@@ -632,7 +632,7 @@ export default function CardsView() {
                                             [card.id]: invoice.key,
                                           }))
                                         }
-                                        className='text-muted-foreground/40 hover:text-emerald-500 transition-all p-1 -m-1'
+                                        className='text-muted-foreground/40 hover:text-blue-500 transition-all p-1 -m-1'
                                         title='Marcar fatura como paga'
                                       >
                                         <Check className='h-4 w-4' />

@@ -4,15 +4,19 @@ import {
   useState,
   ReactNode,
   useEffect,
+  useCallback,
 } from 'react';
 import {
-  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updateProfile,
   signOut,
   onAuthStateChanged,
   User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { auth, db, googleProvider } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
+import { syncUserToSupabase } from '@/lib/users';
 
 export interface User {
   id: string;
@@ -23,45 +27,61 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: () => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, name: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   loading: boolean;
   isLoggingIn: boolean;
+  authError: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+function mapFirebaseError(code: string | undefined): string {
+  switch (code) {
+    case 'auth/invalid-email':
+      return 'E-mail inválido.';
+    case 'auth/user-disabled':
+      return 'Esta conta foi desabilitada.';
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+    case 'auth/invalid-credential':
+      return 'E-mail ou senha incorretos.';
+    case 'auth/email-already-in-use':
+      return 'Já existe uma conta com esse e-mail.';
+    case 'auth/weak-password':
+      return 'A senha precisa ter pelo menos 6 caracteres.';
+    case 'auth/too-many-requests':
+      return 'Muitas tentativas. Tente novamente em alguns minutos.';
+    case 'auth/network-request-failed':
+      return 'Sem conexão. Verifique a internet e tente de novo.';
+    default:
+      return 'Algo deu errado. Tente novamente.';
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
       (firebaseUser: FirebaseUser | null) => {
         if (firebaseUser) {
-          const name = firebaseUser.displayName || 'Usuário';
-          const email = firebaseUser.email || '';
-          const avatar = firebaseUser.photoURL || null;
-          setUser({
+          const mapped: User = {
             id: firebaseUser.uid,
-            name,
-            email,
-            avatar: avatar || undefined,
-          });
-          setDoc(
-            doc(db, 'users', firebaseUser.uid),
-            {
-              name,
-              email,
-              avatar,
-              updatedAt: serverTimestamp(),
-            },
-            { merge: true },
-          ).catch(() => {
-            // Non-blocking: profile sync errors should not break login
+            name: firebaseUser.displayName || 'Usuário',
+            email: firebaseUser.email || '',
+            avatar: firebaseUser.photoURL || undefined,
+          };
+          setUser(mapped);
+          syncUserToSupabase(mapped).catch(() => {
+            // non-blocking; sync is retried on next login
           });
         } else {
           setUser(null);
@@ -74,35 +94,70 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const login = async () => {
+  const login = useCallback(async (email: string, password: string) => {
+    setAuthError(null);
+    setIsLoggingIn(true);
     try {
-      setIsLoggingIn(true);
-      await signInWithPopup(auth, googleProvider);
+      await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
       setIsLoggingIn(false);
-      alert(
-        `ERRO DE CONFIGURAÇÃO:\n${error.code}\n\n1. Verifique se clicou em SALVAR no Firebase.\n2. Tente abrir em uma janela ANÔNIMA.\n3. Domínio localhost deve estar autorizado.`,
-      );
+      setAuthError(mapFirebaseError(error?.code));
+      throw error;
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const signup = useCallback(
+    async (email: string, password: string, name: string) => {
+      setAuthError(null);
+      setIsLoggingIn(true);
+      try {
+        const cred = await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password,
+        );
+        if (name && cred.user) {
+          await updateProfile(cred.user, { displayName: name });
+        }
+      } catch (error: any) {
+        setIsLoggingIn(false);
+        setAuthError(mapFirebaseError(error?.code));
+        throw error;
+      }
+    },
+    [],
+  );
+
+  const resetPassword = useCallback(async (email: string) => {
+    setAuthError(null);
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (error: any) {
+      setAuthError(mapFirebaseError(error?.code));
+      throw error;
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
     try {
       await signOut(auth);
-    } catch (error) {
-      // Handle logout error silently
+    } catch {
+      // logout falha silenciosa
     }
-  };
+  }, []);
 
   return (
     <AuthContext.Provider
       value={{
         user,
         login,
+        signup,
+        resetPassword,
         logout,
         isAuthenticated: !!user,
         loading,
         isLoggingIn,
+        authError,
       }}
     >
       {children}

@@ -90,14 +90,14 @@ export function DebtsTable({ debts, onDelete, onIncrementInstallment, onSettleDe
                                             <>
                                                 <DropdownMenuItem
                                                     onClick={() => onIncrementInstallment(debt)}
-                                                    className="text-emerald-500 focus:text-emerald-600 focus:bg-emerald-50 dark:focus:bg-emerald-900/20"
+                                                    className="text-blue-500 focus:text-blue-600 focus:bg-blue-50 dark:focus:bg-blue-900/20"
                                                 >
                                                     <Check className='mr-2 h-4 w-4' />
                                                     <span>Pagar 1 Parcela</span>
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                     onClick={() => onSettleDebt(debt)}
-                                                    className="text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50 dark:focus:bg-emerald-900/20"
+                                                    className="text-blue-600 focus:text-blue-700 focus:bg-blue-50 dark:focus:bg-blue-900/20"
                                                 >
                                                     <CheckCheck className='mr-2 h-4 w-4' />
                                                     <span>Quitar Dívida</span>
@@ -128,7 +128,7 @@ export function DebtsTable({ debts, onDelete, onIncrementInstallment, onSettleDe
                                     </p>
                                 </div>
                                 <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-current/10 ${debt.status === 'pago' || remainingInstallments === 0
-                                    ? 'bg-emerald-500/10 text-emerald-500'
+                                    ? 'bg-blue-500/10 text-blue-500'
                                     : 'bg-red-500/10 text-red-400'
                                     }`}>
                                     {debt.status === 'pago' || remainingInstallments === 0 ? 'Pago' : 'A Pagar'}
@@ -237,7 +237,7 @@ export function DebtsTable({ debts, onDelete, onIncrementInstallment, onSettleDe
                                         <TableCell>
                                             <span
                                                 className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${debt.status === 'pago' || remainingInstallments === 0
-                                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
                                                     : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                                                     }`}
                                             >
@@ -261,14 +261,14 @@ export function DebtsTable({ debts, onDelete, onIncrementInstallment, onSettleDe
                                                         <>
                                                             <DropdownMenuItem
                                                                 onClick={() => onIncrementInstallment(debt)}
-                                                                className="text-emerald-500 focus:text-emerald-600 focus:bg-emerald-50 dark:focus:bg-emerald-900/20"
+                                                                className="text-blue-500 focus:text-blue-600 focus:bg-blue-50 dark:focus:bg-blue-900/20"
                                                             >
                                                                 <Check className='mr-2 h-4 w-4' />
                                                                 <span>Pagar 1 Parcela</span>
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 onClick={() => onSettleDebt(debt)}
-                                                                className="text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50 dark:focus:bg-emerald-900/20"
+                                                                className="text-blue-600 focus:text-blue-700 focus:bg-blue-50 dark:focus:bg-blue-900/20"
                                                             >
                                                                 <CheckCheck className='mr-2 h-4 w-4' />
                                                                 <span>Quitar Dívida</span>

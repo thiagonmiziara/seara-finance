@@ -4,7 +4,6 @@ import CardsView from './CardsView';
 import * as useCardsHook from '@/hooks/useCards';
 import * as useFinanceHook from '@/hooks/useFinance';
 import * as useDebtsHook from '@/hooks/useDebts';
-import type { DocumentData, DocumentReference } from 'firebase/firestore';
 
 vi.mock('@/hooks/useCards');
 vi.mock('@/hooks/useFinance');
@@ -36,6 +35,7 @@ describe('CardsView', () => {
       addTransactionsBatch: vi.fn(async () => undefined),
       addTransfer: vi.fn(async () => undefined),
       removeTransaction: vi.fn(async () => undefined),
+      updateTransactionStatus: vi.fn(async () => undefined),
       exportToCSV: vi.fn(),
       summary: { income: 0, expense: 0, balance: 0 },
       isAdding: false,
@@ -46,10 +46,11 @@ describe('CardsView', () => {
     mockedUseDebts.mockReturnValue({
       debts: [],
       incrementInstallment: vi.fn(),
-      addDebt: vi.fn(async () => ({} as DocumentReference<DocumentData>)),
+      addDebt: vi.fn(async () => undefined),
       updateDebt: vi.fn(async () => undefined),
       removeDebt: vi.fn(async () => undefined),
       settleDebt: vi.fn(async () => undefined),
+      unmarkLastInstallment: vi.fn(async () => undefined),
       summary: { total: 0, paid: 0, remaining: 0 },
       isAdding: false,
       isUpdating: false,

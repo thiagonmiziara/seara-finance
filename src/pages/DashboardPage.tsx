@@ -15,6 +15,9 @@ import {
 } from 'date-fns';
 import { useFinance } from '@/hooks/useFinance';
 import { useProjectedTransactions } from '@/hooks/useProjectedTransactions';
+import { useDebts } from '@/hooks/useDebts';
+import { getDebtStatusInfo } from '@/lib/debtStatus';
+import { CalendarClock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { FlowChart } from '@/components/FlowChart';
@@ -87,8 +90,33 @@ export default function DashboardPage() {
   const { navigate } = useNavigation();
   const { categories: dyn } = useCategories();
   const allCats = dyn.length > 0 ? dyn : STATIC_CATEGORIES;
+  const { debts } = useDebts();
 
   const [hideValue, setHideValue] = useState(false);
+
+  // Sum of installmentAmount for parcels due in the current calendar month
+  // that are not yet paid. Drives the "Parcelas do mês" KPI on the dashboard.
+  const monthInstallmentsTotal = useMemo(() => {
+    return debts.reduce((acc, d) => {
+      const info = getDebtStatusInfo(d);
+      if (
+        (info.status === 'a_pagar' || info.status === 'em_atraso') &&
+        info.monthInstallmentNumber !== null
+      ) {
+        return acc + d.installmentAmount;
+      }
+      return acc;
+    }, 0);
+  }, [debts]);
+  const monthInstallmentsCount = useMemo(() => {
+    return debts.filter((d) => {
+      const info = getDebtStatusInfo(d);
+      return (
+        (info.status === 'a_pagar' || info.status === 'em_atraso') &&
+        info.monthInstallmentNumber !== null
+      );
+    }).length;
+  }, [debts]);
 
   const dashboardTransactions = useMemo<Transaction[]>(
     () => [...realDashboard, ...projected].sort((a, b) => b.date.localeCompare(a.date)),
@@ -246,6 +274,36 @@ export default function DashboardPage() {
         </section>
       </div>
 
+      {/* Parcelas do mês — KPI compacto */}
+      {monthInstallmentsCount > 0 && (
+        <section>
+          <button
+            type='button'
+            onClick={() => navigate('dividas')}
+            className='w-full flex items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 p-4 transition-colors text-left'
+          >
+            <div className='flex items-center gap-3 min-w-0'>
+              <span className='inline-flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 shrink-0'>
+                <CalendarClock className='h-5 w-5' />
+              </span>
+              <div className='min-w-0'>
+                <div className='text-[11px] font-bold uppercase tracking-widest text-muted-foreground'>
+                  Parcelas do mês
+                </div>
+                <div className='text-lg sm:text-xl font-extrabold tabular-nums text-amber-600 dark:text-amber-400 truncate'>
+                  {hideValue ? '••••' : formatCurrency(monthInstallmentsTotal)}
+                </div>
+                <div className='text-xs text-muted-foreground'>
+                  {monthInstallmentsCount}{' '}
+                  {monthInstallmentsCount === 1 ? 'parcela a pagar' : 'parcelas a pagar'}
+                </div>
+              </div>
+            </div>
+            <ChevronRight className='h-4 w-4 text-muted-foreground shrink-0' />
+          </button>
+        </section>
+      )}
+
       {/* Shortcuts */}
       <section>
         <h2 className='text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-3'>
@@ -323,7 +381,7 @@ export default function DashboardPage() {
                 <li key={t.id} className='flex items-center gap-3 px-4 py-3'>
                   <span
                     className='h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0'
-                    style={{ backgroundColor: cat?.color ?? (isExpense ? '#ef4444' : '#16a34a') }}
+                    style={{ backgroundColor: cat?.color ?? (isExpense ? '#ef4444' : '#2563eb') }}
                   >
                     {(cat?.label ?? t.category ?? '?').slice(0, 1).toUpperCase()}
                   </span>

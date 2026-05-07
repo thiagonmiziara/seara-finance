@@ -4,26 +4,28 @@ import { AuthProvider, useAuth } from './useAuth';
 
 const authMocks = vi.hoisted(() => ({
   onAuthStateChanged: vi.fn(),
-  signInWithPopup: vi.fn(),
+  signInWithEmailAndPassword: vi.fn(),
+  createUserWithEmailAndPassword: vi.fn(),
+  sendPasswordResetEmail: vi.fn(),
+  updateProfile: vi.fn(),
   signOut: vi.fn(),
 }));
 
 vi.mock('firebase/auth', () => ({
-  signInWithPopup: authMocks.signInWithPopup,
+  signInWithEmailAndPassword: authMocks.signInWithEmailAndPassword,
+  createUserWithEmailAndPassword: authMocks.createUserWithEmailAndPassword,
+  sendPasswordResetEmail: authMocks.sendPasswordResetEmail,
+  updateProfile: authMocks.updateProfile,
   signOut: authMocks.signOut,
   onAuthStateChanged: authMocks.onAuthStateChanged,
 }));
 
-vi.mock('firebase/firestore', () => ({
-  doc: vi.fn(() => ({})),
-  setDoc: vi.fn(() => Promise.resolve()),
-  serverTimestamp: vi.fn(() => 'server-timestamp'),
-}));
-
 vi.mock('@/lib/firebase', () => ({
   auth: {},
-  db: {},
-  googleProvider: {},
+}));
+
+vi.mock('@/lib/users', () => ({
+  syncUserToSupabase: vi.fn(() => Promise.resolve()),
 }));
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -32,9 +34,7 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
 
 describe('useAuth', () => {
   beforeEach(() => {
-    authMocks.onAuthStateChanged.mockReset();
-    authMocks.signInWithPopup.mockReset();
-    authMocks.signOut.mockReset();
+    Object.values(authMocks).forEach((m) => m.mockReset());
   });
 
   it('sets user when auth state changes', () => {
@@ -54,17 +54,63 @@ describe('useAuth', () => {
     expect(result.current.loading).toBe(false);
   });
 
-  it('calls signInWithPopup on login', async () => {
+  it('calls signInWithEmailAndPassword on login', async () => {
     authMocks.onAuthStateChanged.mockImplementation((_auth: any, cb: any) => {
       cb(null);
       return () => {};
     });
+    authMocks.signInWithEmailAndPassword.mockResolvedValue(undefined);
 
     const { result } = renderHook(() => useAuth(), { wrapper });
     await act(async () => {
-      await result.current.login();
+      await result.current.login('user@example.com', 'secret123');
     });
 
-    expect(authMocks.signInWithPopup).toHaveBeenCalled();
+    expect(authMocks.signInWithEmailAndPassword).toHaveBeenCalledWith(
+      expect.anything(),
+      'user@example.com',
+      'secret123',
+    );
+  });
+
+  it('calls createUserWithEmailAndPassword + updateProfile on signup', async () => {
+    authMocks.onAuthStateChanged.mockImplementation((_auth: any, cb: any) => {
+      cb(null);
+      return () => {};
+    });
+    authMocks.createUserWithEmailAndPassword.mockResolvedValue({
+      user: { uid: 'user-1' },
+    });
+    authMocks.updateProfile.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await act(async () => {
+      await result.current.signup('new@example.com', 'secret123', 'Ana');
+    });
+
+    expect(authMocks.createUserWithEmailAndPassword).toHaveBeenCalledWith(
+      expect.anything(),
+      'new@example.com',
+      'secret123',
+    );
+    expect(authMocks.updateProfile).toHaveBeenCalled();
+  });
+
+  it('exposes resetPassword that calls sendPasswordResetEmail', async () => {
+    authMocks.onAuthStateChanged.mockImplementation((_auth: any, cb: any) => {
+      cb(null);
+      return () => {};
+    });
+    authMocks.sendPasswordResetEmail.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await act(async () => {
+      await result.current.resetPassword('user@example.com');
+    });
+
+    expect(authMocks.sendPasswordResetEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      'user@example.com',
+    );
   });
 });

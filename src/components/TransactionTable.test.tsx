@@ -7,7 +7,7 @@ vi.mock('@/hooks/useCategories', () => ({
   useCategories: () => ({
     categories: [
       { value: 'compras', label: 'Compras', color: '#2563eb' },
-      { value: 'salario', label: 'Salário', color: '#16a34a' },
+      { value: 'salario', label: 'Salário', color: '#2563eb' },
       { value: 'transporte', label: 'Transporte', color: '#f59e0b' },
     ],
   }),
@@ -66,15 +66,15 @@ describe('TransactionTable', () => {
     expect(
       pagoLabels.some(
         (el) =>
-          el.classList.contains('text-emerald-800') ||
-          el.classList.contains('text-emerald-500'),
+          el.classList.contains('text-blue-800') ||
+          el.classList.contains('text-blue-500'),
       ),
     ).toBe(true);
     expect(
       recebidoLabels.some(
         (el) =>
-          el.classList.contains('text-emerald-800') ||
-          el.classList.contains('text-emerald-500'),
+          el.classList.contains('text-blue-800') ||
+          el.classList.contains('text-blue-500'),
       ),
     ).toBe(true);
     expect(

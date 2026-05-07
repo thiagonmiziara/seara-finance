@@ -23,7 +23,7 @@ export function DebtStatusChart({ summary }: DebtStatusChartProps) {
             {
                 name: 'Pago',
                 value: summary.paid,
-                color: '#10b981', // emerald-500
+                color: '#3b82f6', // blue-500
             },
             {
                 name: 'A Pagar',

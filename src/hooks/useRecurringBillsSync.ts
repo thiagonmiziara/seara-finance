@@ -1,99 +1,86 @@
 import { useEffect, useRef } from 'react';
-import {
-  collection,
-  doc,
-  getDocs,
-  query,
-  where,
-  writeBatch,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { format } from 'date-fns';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from './useAuth';
 import { useAccount } from './useAccount';
 import { useRecurringBills } from './useRecurringBills';
-import { format } from 'date-fns';
 
 /**
- * Automatically generates a "a_pagar" / "a_receber" transaction for each
- * active recurring bill when the current month hasn't been generated yet.
- * Uses `recurringBillId + recurringYearMonth` as a deduplication key.
+ * Generates an `a_pagar` / `a_receber` transaction for each active recurring
+ * bill when the current month hasn't been generated yet. Deduplication uses
+ * the partial unique pair (recurring_bill_id, recurring_year_month).
  */
 export function useRecurringBillsSync() {
   const { user } = useAuth();
-  const { accountType } = useAccount();
+  const { accountId } = useAccount();
   const { recurringBills } = useRecurringBills();
-  // Track which months we've already synced in this session to avoid repeated Firestore calls
   const syncedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!user || recurringBills.length === 0) return;
+    if (!user || !accountId || recurringBills.length === 0) return;
 
     const now = new Date();
-    const yearMonth = format(now, 'yyyy-MM'); // e.g. "2026-03"
-
-    const syncKey = `${user.id}-${accountType}-${yearMonth}`;
+    const yearMonth = format(now, 'yyyy-MM');
+    const syncKey = `${user.id}-${accountId}-${yearMonth}`;
     if (syncedRef.current.has(syncKey)) return;
 
     const activeBills = recurringBills.filter((b) => b.isActive);
-    if (activeBills.length === 0) return;
+    if (activeBills.length === 0) {
+      syncedRef.current.add(syncKey);
+      return;
+    }
 
     (async () => {
       try {
-        const txRef = collection(
-          db,
-          'users',
-          user.id,
-          'accounts',
-          accountType,
-          'transactions',
-        );
+        const { data: existing, error } = await supabase
+          .from('transactions')
+          .select('recurring_bill_id')
+          .eq('account_id', accountId)
+          .eq('recurring_year_month', yearMonth);
+        if (error) throw error;
 
-        // Fetch existing generated transactions for this month
-        const existingSnap = await getDocs(
-          query(txRef, where('recurringYearMonth', '==', yearMonth)),
-        );
         const existingBillIds = new Set(
-          existingSnap.docs.map((d) => d.data().recurringBillId as string),
+          (existing ?? [])
+            .map((r: { recurring_bill_id: string | null }) => r.recurring_bill_id)
+            .filter(Boolean),
         );
 
-        // Only create for bills that haven't been generated yet this month
-        const missing = activeBills.filter(
-          (b) => !existingBillIds.has(b.id),
-        );
-
+        const missing = activeBills.filter((b) => !existingBillIds.has(b.id));
         if (missing.length === 0) {
           syncedRef.current.add(syncKey);
           return;
         }
 
-        const batch = writeBatch(db);
-        for (const bill of missing) {
-          // Build due date: current year-month + dueDay
-          const dueDay = Math.min(
-            bill.dueDay,
-            new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate(), // last day of month
-          );
-          const dueDate = `${yearMonth}-${String(dueDay).padStart(2, '0')}`;
+        const lastDayOfMonth = new Date(
+          now.getFullYear(),
+          now.getMonth() + 1,
+          0,
+        ).getDate();
 
-          const newRef = doc(txRef);
-          batch.set(newRef, {
+        const rows = missing.map((bill) => {
+          const dueDay = Math.min(bill.dueDay, lastDayOfMonth);
+          return {
+            account_id: accountId,
             description: bill.description,
             amount: bill.amount,
             category: bill.category,
             type: bill.type,
             status: bill.type === 'income' ? 'a_receber' : 'a_pagar',
-            date: dueDate,
-            createdAt: new Date().toISOString(),
-            recurringBillId: bill.id,
-            recurringYearMonth: yearMonth,
-          });
-        }
+            date: `${yearMonth}-${String(dueDay).padStart(2, '0')}`,
+            recurring_bill_id: bill.id,
+            recurring_year_month: yearMonth,
+          };
+        });
 
-        await batch.commit();
+        const { error: insertErr } = await supabase
+          .from('transactions')
+          .insert(rows);
+        if (insertErr) throw insertErr;
+
         syncedRef.current.add(syncKey);
       } catch (e) {
-        console.error('[RecurringBillsSync] Error generating transactions:', e);
+        console.error('[RecurringBillsSync] generation error', e);
       }
     })();
-  }, [user, accountType, recurringBills]);
+  }, [user, accountId, recurringBills]);
 }

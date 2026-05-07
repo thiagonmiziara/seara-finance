@@ -33,7 +33,7 @@ export function RadarCard({ cardId }: RadarCardProps) {
           </span>
         </div>
       ) : (
-        <span className="text-sm text-emerald-500">
+        <span className="text-sm text-blue-500">
           Sem parcelas futuras — limite livre! 🎉
         </span>
       )}

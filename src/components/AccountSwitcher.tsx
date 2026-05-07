@@ -27,7 +27,7 @@ export function AccountSwitcher() {
                 <SelectContent position="popper" sideOffset={4}>
                     <SelectItem value='personal'>
                         <div className='flex items-center gap-2 h-5'>
-                            <UserRound className='h-4 w-4 text-emerald-500' />
+                            <UserRound className='h-4 w-4 text-blue-500' />
                             <span className='font-medium text-sm'>Pessoal</span>
                         </div>
                     </SelectItem>

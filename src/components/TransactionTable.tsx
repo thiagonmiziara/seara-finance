@@ -57,7 +57,7 @@ export function TransactionTable({
       textClass: 'text-primary',
       dotClass: 'bg-primary',
       itemClass: 'text-primary data-[highlighted]:text-primary',
-      pillClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
+      pillClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
     },
     a_pagar: {
       label: 'A Pagar',
@@ -72,7 +72,7 @@ export function TransactionTable({
       textClass: 'text-primary',
       dotClass: 'bg-primary',
       itemClass: 'text-primary data-[highlighted]:text-primary',
-      pillClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
+      pillClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
     },
     a_receber: {
       label: 'A Receber',
@@ -442,8 +442,8 @@ export function TransactionTable({
             > = {
               pago: {
                 label: 'Pago',
-                color: 'text-emerald-500',
-                bg: 'bg-emerald-500/10',
+                color: 'text-blue-500',
+                bg: 'bg-blue-500/10',
               },
               a_pagar: {
                 label: 'A Pagar',
@@ -452,8 +452,8 @@ export function TransactionTable({
               },
               recebido: {
                 label: 'Recebido',
-                color: 'text-emerald-500',
-                bg: 'bg-emerald-500/10',
+                color: 'text-blue-500',
+                bg: 'bg-blue-500/10',
               },
               a_receber: {
                 label: 'A Receber',

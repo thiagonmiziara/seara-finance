@@ -1,81 +1,99 @@
 import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  onSnapshot,
-  query,
-  orderBy,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from './useAuth';
 import { useAccount } from './useAccount';
 import { RecurringBill, RecurringBillFormValues } from '@/types';
 
+interface BillRow {
+  id: string;
+  description: string;
+  amount: number | string;
+  category: string;
+  type: 'income' | 'expense';
+  due_day: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+function rowToBill(row: BillRow): RecurringBill {
+  return {
+    id: row.id,
+    description: row.description,
+    amount: typeof row.amount === 'string' ? Number(row.amount) : row.amount,
+    category: row.category,
+    type: row.type,
+    dueDay: row.due_day,
+    isActive: row.is_active,
+    createdAt: row.created_at,
+  };
+}
+
+function formToRow(data: Partial<RecurringBillFormValues>) {
+  const out: Record<string, unknown> = {};
+  if (data.description !== undefined) out.description = data.description;
+  if (data.amount !== undefined) out.amount = data.amount;
+  if (data.category !== undefined) out.category = data.category;
+  if (data.type !== undefined) out.type = data.type;
+  if (data.dueDay !== undefined) out.due_day = data.dueDay;
+  if (data.isActive !== undefined) out.is_active = data.isActive;
+  return out;
+}
+
 export function useRecurringBills() {
   const { user } = useAuth();
-  const { accountType } = useAccount();
+  const { accountId } = useAccount();
   const queryClient = useQueryClient();
-  const queryKey = ['recurringBills', user?.id, accountType];
+  const queryKey = ['recurringBills', user?.id, accountId];
 
   const { data: recurringBills = [], isPending } = useQuery<RecurringBill[]>({
     queryKey,
-    queryFn: () => [],
-    enabled: !!user,
-    staleTime: Infinity,
+    enabled: !!user && !!accountId,
+    staleTime: 1000 * 60,
+    queryFn: async () => {
+      if (!accountId) return [];
+      const { data, error } = await supabase
+        .from('recurring_bills')
+        .select(
+          'id, description, amount, category, type, due_day, is_active, created_at',
+        )
+        .eq('account_id', accountId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data as BillRow[]).map(rowToBill);
+    },
   });
 
-  // Real-time sync
   useEffect(() => {
-    if (!user) return;
-
-    const q = query(
-      collection(
-        db,
-        'users',
-        user.id,
-        'accounts',
-        accountType,
-        'recurringBills',
-      ),
-      orderBy('createdAt', 'desc'),
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const bills = snapshot.docs.map((docSnap) => {
-        const data = docSnap.data() as any;
-        return {
-          ...data,
-          id: docSnap.id,
-        } as RecurringBill;
-      });
-      queryClient.setQueryData(queryKey, bills);
-    });
-
-    return () => unsubscribe();
-  }, [user, accountType, queryClient]);
+    if (!user || !accountId) return;
+    const channel = supabase
+      .channel(`recurring_bills:${accountId}:${crypto.randomUUID()}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'recurring_bills',
+          filter: `account_id=eq.${accountId}`,
+        },
+        () => queryClient.invalidateQueries({ queryKey }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, accountId, queryClient]);
 
   const addMutation = useMutation({
     mutationFn: async (data: RecurringBillFormValues) => {
-      if (!user) throw new Error('User not authenticated');
-      return addDoc(
-        collection(
-          db,
-          'users',
-          user.id,
-          'accounts',
-          accountType,
-          'recurringBills',
-        ),
-        {
-          ...data,
-          createdAt: new Date().toISOString(),
-        },
-      );
+      if (!accountId) throw new Error('Account not ready');
+      const { error } = await supabase
+        .from('recurring_bills')
+        .insert({ account_id: accountId, ...formToRow(data) });
+      if (error) throw error;
     },
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
 
   const updateMutation = useMutation({
@@ -86,19 +104,11 @@ export function useRecurringBills() {
       id: string;
       data: Partial<RecurringBillFormValues>;
     }) => {
-      if (!user) throw new Error('User not authenticated');
-      return updateDoc(
-        doc(
-          db,
-          'users',
-          user.id,
-          'accounts',
-          accountType,
-          'recurringBills',
-          id,
-        ),
-        data,
-      );
+      const { error } = await supabase
+        .from('recurring_bills')
+        .update(formToRow(data))
+        .eq('id', id);
+      if (error) throw error;
     },
     onMutate: async ({ id, data }) => {
       await queryClient.cancelQueries({ queryKey });
@@ -108,26 +118,19 @@ export function useRecurringBills() {
       );
       return { previous };
     },
-    onError: (_err, _vars, context) => {
-      if (context?.previous)
-        queryClient.setQueryData(queryKey, context.previous);
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(queryKey, ctx.previous);
     },
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      if (!user) throw new Error('User not authenticated');
-      return deleteDoc(
-        doc(
-          db,
-          'users',
-          user.id,
-          'accounts',
-          accountType,
-          'recurringBills',
-          id,
-        ),
-      );
+      const { error } = await supabase
+        .from('recurring_bills')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
     },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey });
@@ -137,10 +140,10 @@ export function useRecurringBills() {
       );
       return { previous };
     },
-    onError: (_err, _id, context) => {
-      if (context?.previous)
-        queryClient.setQueryData(queryKey, context.previous);
+    onError: (_err, _id, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(queryKey, ctx.previous);
     },
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
 
   const toggleActive = (bill: RecurringBill) =>

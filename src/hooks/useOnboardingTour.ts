@@ -61,7 +61,7 @@ export const TOUR_STEPS: TourStep[] = [
   },
 ];
 
-const STORAGE_KEY = 'seara-tour-completed';
+const STORAGE_KEY = 'finzap-tour-completed';
 
 export function useOnboardingTour(onTabChange?: (tab: 'overview' | 'debts' | 'cards') => void) {
   const [stepIndex, setStepIndex] = useState(0);
