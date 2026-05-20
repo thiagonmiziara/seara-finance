@@ -14,12 +14,14 @@ import {
   ChevronDown,
   Sun,
   Moon,
+  Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import logoUrl from '@/assets/logo.png';
 import { useTheme } from '@/hooks/useTheme';
 import { useReveal } from '@/hooks/useReveal';
+import InstallPwaModal from '@/components/InstallPwaModal';
 
 function cn(...c: Array<string | false | null | undefined>) {
   return c.filter(Boolean).join(' ');
@@ -198,9 +200,11 @@ function ScoreGauge({ value, size = 70 }: { value: number; size?: number }) {
 function LandingNav({
   onLogin,
   onSignup,
+  onInstall,
 }: {
   onLogin: () => void;
   onSignup: () => void;
+  onInstall: () => void;
 }) {
   const [scrolled, setScrolled] = useState(false);
   useEffect(() => {
@@ -232,6 +236,13 @@ function LandingNav({
           >
             Como funciona
           </a>
+          <button
+            type='button'
+            onClick={onInstall}
+            className='hover:text-zinc-900 dark:hover:text-zinc-100'
+          >
+            Como instalar
+          </button>
           <a
             href='#faq'
             className='hover:text-zinc-900 dark:hover:text-zinc-100'
@@ -241,6 +252,14 @@ function LandingNav({
         </nav>
         <div className='flex items-center gap-1.5 sm:gap-2'>
           <ThemeToggle />
+          <Button
+            variant='ghost'
+            size='sm'
+            onClick={onInstall}
+            className='hidden sm:inline-flex gap-1.5'
+          >
+            <Download size={14} /> Instalar
+          </Button>
           <Button
             variant='ghost'
             size='sm'
@@ -596,6 +615,63 @@ function LandingHow() {
   );
 }
 
+function LandingInstall({ onOpen }: { onOpen: () => void }) {
+  useReveal();
+  return (
+    <section id='instalar' className='py-16 md:py-20'>
+      <div className='max-w-5xl mx-auto px-4 lg:px-8 reveal'>
+        <Card
+          className='p-8 sm:p-10 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 overflow-hidden relative'
+        >
+          <div className='absolute -top-16 -left-16 w-72 h-72 rounded-full bg-brand-500/10 blur-3xl pointer-events-none' />
+          <div className='relative grid md:grid-cols-2 gap-8 items-center'>
+            <div>
+              <Pill tone='brand' className='mb-4'>
+                <Download size={11} /> PWA
+              </Pill>
+              <h2 className='font-display font-extrabold text-3xl md:text-4xl tracking-tight text-zinc-900 dark:text-zinc-100 leading-tight'>
+                Instale como app no <span className='text-brand-600'>seu dispositivo</span>
+              </h2>
+              <p className='mt-4 text-zinc-600 dark:text-zinc-300 leading-relaxed'>
+                O Seara Finance é um PWA — funciona no celular Android, iPhone
+                e computador, sem precisar de loja de aplicativos. Veja o passo
+                a passo rápido para o seu dispositivo.
+              </p>
+              <div className='mt-6 flex flex-wrap gap-3'>
+                <Button onClick={onOpen} className='gap-2'>
+                  <Download size={16} /> Ver passo a passo
+                </Button>
+              </div>
+            </div>
+            <div className='grid grid-cols-3 gap-3 text-center'>
+              {[
+                { label: 'Android', desc: 'Chrome' },
+                { label: 'iPhone', desc: 'Safari' },
+                { label: 'Computador', desc: 'Chrome / Edge' },
+              ].map((d) => (
+                <button
+                  type='button'
+                  key={d.label}
+                  onClick={onOpen}
+                  className='rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 hover:border-brand-500/60 hover:shadow-soft transition-all'
+                >
+                  <div className='mx-auto h-10 w-10 rounded-lg bg-brand-50 dark:bg-brand-950/40 flex items-center justify-center text-brand-600 dark:text-brand-400 mb-2'>
+                    <Download size={18} />
+                  </div>
+                  <p className='font-semibold text-sm text-zinc-900 dark:text-zinc-100'>
+                    {d.label}
+                  </p>
+                  <p className='text-[11px] text-zinc-500'>{d.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </Card>
+      </div>
+    </section>
+  );
+}
+
 function LandingFaq() {
   const items = [
     {
@@ -780,16 +856,27 @@ function LandingFooter() {
 }
 
 export default function LandingPage({ onSignup }: { onSignup: () => void }) {
+  const [installOpen, setInstallOpen] = useState(false);
   return (
     <div className='min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100'>
-      <LandingNav onLogin={onSignup} onSignup={onSignup} />
+      <LandingNav
+        onLogin={onSignup}
+        onSignup={onSignup}
+        onInstall={() => setInstallOpen(true)}
+      />
       <LandingHero onSignup={onSignup} />
       <LandingTrust />
       <LandingFeatures />
       <LandingHow />
+      <LandingInstall onOpen={() => setInstallOpen(true)} />
       <LandingFaq />
       <LandingCTA onSignup={onSignup} />
       <LandingFooter />
+      <InstallPwaModal
+        open={installOpen}
+        onOpenChange={setInstallOpen}
+        onAccess={onSignup}
+      />
     </div>
   );
 }
