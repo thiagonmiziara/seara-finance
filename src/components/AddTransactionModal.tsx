@@ -100,6 +100,14 @@ export function AddTransactionModal({
     setTransferType(formType === 'expense' ? 'income' : 'expense');
   }, [formType, open]);
 
+  // Permite que o FAB da navegação mobile abra o modal via evento global.
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener('seara:open-add-transaction', handler);
+    return () =>
+      window.removeEventListener('seara:open-add-transaction', handler);
+  }, []);
+
   const onSubmit = async (data: TransactionFormValues) => {
     try {
       if (isTransfer && onAddTransfer) {

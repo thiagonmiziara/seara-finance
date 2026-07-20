@@ -68,7 +68,8 @@ body {
     --shadow-pop: 0 12px 32px -8px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.08);
 
     --brand-gradient:
-      radial-gradient(120% 100% at 0% 0%, rgba(34, 168, 92, 0.18), transparent 60%),
+      radial-gradient(120% 100% at 0% 0%, hsl(152 60% 36% / 0.14), transparent 60%),
+      radial-gradient(120% 100% at 100% 0%, hsl(150 55% 55% / 0.10), transparent 55%),
       linear-gradient(180deg, hsl(0 0% 100%), hsl(150 25% 97%));
 
     /* Chart-specific colors */
@@ -120,7 +121,8 @@ body {
     --shadow-pop: 0 12px 32px -8px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.4);
 
     --brand-gradient:
-      radial-gradient(120% 100% at 0% 0%, rgba(132, 204, 22, 0.18), transparent 60%),
+      radial-gradient(120% 100% at 0% 0%, hsl(88 80% 48% / 0.18), transparent 60%),
+      radial-gradient(120% 100% at 100% 0%, hsl(150 60% 45% / 0.10), transparent 55%),
       linear-gradient(180deg, hsl(240 3.7% 15.9%), hsl(240 5.9% 12%));
 
     /* Chart-specific colors */
@@ -147,7 +149,8 @@ body {
   }
 
   h1, h2, h3, .font-display {
-    letter-spacing: -0.01em;
+    letter-spacing: -0.012em;
+    font-feature-settings: 'ss01' 1, 'cv11' 1;
   }
 }
 
@@ -230,11 +233,72 @@ body {
     animation: shimmer 4s linear infinite;
   }
 
+  /* Scene transitions (staged storytelling sections) */
+  .scene-frame {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate3d(0, 14px, 0) scale(.97);
+    transition:
+      opacity .55s cubic-bezier(.2,.7,.2,1),
+      transform .55s cubic-bezier(.2,.7,.2,1);
+    will-change: opacity, transform;
+  }
+  .scene-frame.is-active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  .scene-step {
+    transition:
+      opacity .45s ease,
+      transform .45s cubic-bezier(.2,.7,.2,1),
+      border-color .45s ease,
+      background-color .45s ease;
+  }
+  .scene-step[data-active='false'] {
+    opacity: .42;
+    transform: translateX(-4px);
+  }
+  .scene-step[data-active='true'] {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  @keyframes scoreFill {
+    from { stroke-dashoffset: var(--score-empty); }
+    to   { stroke-dashoffset: var(--score-full); }
+  }
+  .anim-score-fill {
+    animation: scoreFill 1.4s cubic-bezier(.2,.7,.2,1) both;
+  }
+
+  @keyframes barGrow {
+    from { transform: scaleY(0); }
+    to   { transform: scaleY(1); }
+  }
+  .anim-bar-grow {
+    transform-origin: bottom;
+    animation: barGrow .9s cubic-bezier(.2,.7,.2,1) both;
+  }
+
+  @keyframes ringPulse {
+    0%   { box-shadow: 0 0 0 0 hsl(var(--primary) / .35); }
+    70%  { box-shadow: 0 0 0 10px hsl(var(--primary) / 0); }
+    100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+  }
+  .anim-ring-pulse { animation: ringPulse 2s ease-out infinite; }
+
   @media (prefers-reduced-motion: reduce) {
     .anim-fade-up,
     .anim-float,
     .anim-float-slow,
     .anim-shimmer,
+    .anim-score-fill,
+    .anim-bar-grow,
+    .anim-ring-pulse,
     .gradient-text {
       animation: none;
     }
@@ -242,6 +306,11 @@ body {
       opacity: 1;
       transform: none;
       transition: none;
+    }
+    .scene-frame,
+    .scene-step {
+      transition: opacity .2s ease;
+      transform: none !important;
     }
   }
 }
