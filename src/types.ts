@@ -172,3 +172,77 @@ export const recurringBillFormSchema = recurringBillSchema.omit({
   createdAt: true,
 });
 export type RecurringBillFormValues = z.infer<typeof recurringBillFormSchema>;
+
+// ─── Goals (objetivos) ──────────────────────────────────────────────────────
+
+export const goalKindSchema = z.enum(['savings', 'retirement']);
+export type GoalKind = z.infer<typeof goalKindSchema>;
+
+export const goalStatusSchema = z.enum(['active', 'completed', 'archived']);
+export type GoalStatus = z.infer<typeof goalStatusSchema>;
+
+export const goalSchema = z.object({
+  // IDs vêm do Firestore (não são UUID), por isso min(1) e não uuid().
+  id: z.string().min(1),
+  title: z
+    .string({ required_error: 'Título é obrigatório' })
+    .min(1, 'Título é obrigatório')
+    .max(80, 'Título muito longo'),
+  description: z.string().max(280).nullable().optional(),
+  targetAmount: z
+    .number({ invalid_type_error: 'Informe um valor válido' })
+    .min(0.01, 'Valor deve ser maior que zero'),
+  initialAmount: z
+    .number({ invalid_type_error: 'Informe um valor válido' })
+    .min(0, 'Não pode ser negativo'),
+  targetDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida')
+    .nullable()
+    .optional(),
+  kind: goalKindSchema,
+  status: goalStatusSchema,
+  icon: z.string().nullable().optional(),
+  color: z.string().nullable().optional(),
+  createdAt: z.string(),
+});
+
+export type Goal = z.infer<typeof goalSchema>;
+
+export const goalFormSchema = goalSchema.omit({
+  id: true,
+  status: true,
+  createdAt: true,
+});
+export type GoalFormValues = z.infer<typeof goalFormSchema>;
+
+export const goalContributionSchema = z.object({
+  id: z.string().min(1),
+  goalId: z.string().min(1),
+  amount: z
+    .number({ invalid_type_error: 'Informe um valor válido' })
+    .min(0.01, 'Valor deve ser maior que zero'),
+  contributedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida'),
+  note: z.string().max(140).nullable().optional(),
+  createdAt: z.string(),
+});
+export type GoalContribution = z.infer<typeof goalContributionSchema>;
+
+export const goalContributionFormSchema = goalContributionSchema.omit({
+  id: true,
+  createdAt: true,
+});
+export type GoalContributionFormValues = z.infer<
+  typeof goalContributionFormSchema
+>;
+
+/** Derived view returned by useGoals — soma valor inicial + aportes manuais. */
+export interface GoalWithProgress extends Goal {
+  currentAmount: number;
+  /** 0..1; pode passar de 1 quando objetivo é superado. */
+  progress: number;
+  monthsRemaining: number | null;
+  /** Aporte mensal sugerido pra fechar no prazo. null se sem prazo. */
+  suggestedMonthly: number | null;
+  isCompleted: boolean;
+}

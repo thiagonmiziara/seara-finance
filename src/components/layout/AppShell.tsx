@@ -14,7 +14,9 @@ const TransactionsPage = lazy(() => import('@/pages/TransactionsPage'));
 const DebtsPage = lazy(() => import('@/pages/DebtsPage'));
 const CardsPage = lazy(() => import('@/pages/CardsPage'));
 const RecurringBillsPage = lazy(() => import('@/pages/RecurringBillsPage'));
+const GoalsPage = lazy(() => import('@/pages/GoalsPage'));
 const CategoriesPage = lazy(() => import('@/pages/CategoriesPage'));
+const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
 
 function PageLoader() {
   return (
@@ -51,7 +53,9 @@ function ShellContent() {
                 {current === 'dividas' && <DebtsPage />}
                 {current === 'cartoes' && <CardsPage />}
                 {current === 'contas-fixas' && <RecurringBillsPage />}
+                {current === 'objetivos' && <GoalsPage />}
                 {current === 'categorias' && <CategoriesPage />}
+                {current === 'configuracoes' && <SettingsPage />}
               </Suspense>
             </div>
           </main>
