@@ -14,6 +14,8 @@ import {
   CreditCard,
   Repeat,
   Tags,
+  Target,
+  Settings,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -23,7 +25,9 @@ export type RouteId =
   | 'dividas'
   | 'cartoes'
   | 'contas-fixas'
-  | 'categorias';
+  | 'objetivos'
+  | 'categorias'
+  | 'configuracoes';
 
 export interface NavItem {
   id: RouteId;
@@ -39,7 +43,9 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'dividas', label: 'Dívidas', shortLabel: 'Dívidas', icon: Wallet, path: '/dividas' },
   { id: 'cartoes', label: 'Cartões', shortLabel: 'Cartões', icon: CreditCard, path: '/cartoes' },
   { id: 'contas-fixas', label: 'Contas fixas', shortLabel: 'Fixas', icon: Repeat, path: '/contas-fixas' },
+  { id: 'objetivos', label: 'Objetivos', shortLabel: 'Metas', icon: Target, path: '/objetivos' },
   { id: 'categorias', label: 'Categorias', shortLabel: 'Cat.', icon: Tags, path: '/categorias' },
+  { id: 'configuracoes', label: 'Configurações', shortLabel: 'Config', icon: Settings, path: '/configuracoes' },
 ];
 
 const PATH_TO_ID: Record<string, RouteId> = NAV_ITEMS.reduce(
