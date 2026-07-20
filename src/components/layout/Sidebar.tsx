@@ -50,7 +50,9 @@ export function Sidebar({ onNavigate }: SidebarProps) {
         </button>
         {!collapsed && (
           <div className='flex flex-col leading-tight overflow-hidden'>
-            <span className='text-base font-extrabold tracking-tight'>Seara</span>
+            <span className='text-base font-extrabold tracking-tight'>
+              <span className='gradient-text'>Seara</span>
+            </span>
             <span className='text-[11px] uppercase tracking-widest text-muted-foreground font-semibold'>
               Finance
             </span>

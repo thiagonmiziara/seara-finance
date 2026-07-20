@@ -15,6 +15,9 @@ import {
   Sun,
   Moon,
   Download,
+  Shield,
+  Smartphone,
+  HelpCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -673,64 +676,153 @@ function LandingInstall({ onOpen }: { onOpen: () => void }) {
 }
 
 function LandingFaq() {
+  useReveal();
   const items = [
     {
       q: 'Meus dados estão seguros?',
       a: 'Sim. Usamos criptografia de ponta a ponta e Firebase com autenticação Google. Nunca pedimos sua senha do banco e não acessamos suas contas bancárias.',
+      Icon: Shield,
+      iconBg: 'bg-gradient-to-br from-emerald-400 to-teal-500',
+      glow: 'from-emerald-500/15 via-teal-500/10 to-transparent',
+      ring: 'ring-emerald-400/40 dark:ring-emerald-500/30',
+      border: 'border-emerald-400/50 dark:border-emerald-500/40',
+      text: 'text-emerald-600 dark:text-emerald-400',
     },
     {
       q: 'Preciso conectar com meu banco?',
       a: 'Não. O Seara Finance funciona com lançamentos manuais ou importação de CSV. Você mantém total controle dos dados.',
+      Icon: Wallet,
+      iconBg: 'bg-gradient-to-br from-green-500 to-emerald-600',
+      glow: 'from-green-500/15 via-emerald-500/10 to-transparent',
+      ring: 'ring-green-400/40 dark:ring-green-500/30',
+      border: 'border-green-400/50 dark:border-green-500/40',
+      text: 'text-green-600 dark:text-green-400',
     },
     {
       q: 'É realmente gratuito?',
       a: 'Sim. O Seara Finance é gratuito, sem anúncios e sem cobrança.',
+      Icon: Sparkles,
+      iconBg: 'bg-gradient-to-br from-teal-400 to-emerald-500',
+      glow: 'from-teal-500/15 via-emerald-500/10 to-transparent',
+      ring: 'ring-teal-400/40 dark:ring-teal-500/30',
+      border: 'border-teal-400/50 dark:border-teal-500/40',
+      text: 'text-teal-600 dark:text-teal-400',
     },
     {
       q: 'Funciona no celular?',
       a: 'Sim. É um PWA — pode instalar como app no Android e iOS direto pelo navegador.',
+      Icon: Smartphone,
+      iconBg: 'bg-gradient-to-br from-lime-400 to-emerald-500',
+      glow: 'from-lime-500/15 via-emerald-500/10 to-transparent',
+      ring: 'ring-lime-400/40 dark:ring-lime-500/30',
+      border: 'border-lime-400/50 dark:border-lime-500/40',
+      text: 'text-lime-600 dark:text-lime-400',
     },
   ];
   const [open, setOpen] = useState<number>(0);
   return (
-    <section id='faq' className='py-16 md:py-20'>
-      <div className='max-w-3xl mx-auto px-4 lg:px-8'>
-        <div className='text-center mb-12'>
-          <Pill tone='brand' className='mb-4'>
-            FAQ
+    <section id='faq' className='relative py-16 md:py-24 overflow-hidden'>
+      <div className='absolute inset-0 pointer-events-none' aria-hidden='true'>
+        <div className='absolute top-1/4 -left-24 w-72 h-72 rounded-full bg-brand-500/10 blur-3xl anim-float-slow' />
+        <div className='absolute bottom-1/4 -right-24 w-80 h-80 rounded-full bg-emerald-500/10 blur-3xl anim-float' />
+      </div>
+      <div className='relative max-w-3xl mx-auto px-4 lg:px-8'>
+        <div className='text-center mb-12 reveal'>
+          <Pill tone='brand' className='mb-4 inline-flex items-center gap-1.5'>
+            <HelpCircle size={12} /> FAQ
           </Pill>
-          <h2 className='font-display font-extrabold text-3xl md:text-4xl tracking-tight text-zinc-900 dark:text-zinc-100'>
-            Perguntas frequentes
+          <h2 className='font-display font-extrabold text-3xl md:text-4xl tracking-tight'>
+            <span className='gradient-text'>Perguntas frequentes</span>
           </h2>
+          <p className='mt-3 text-zinc-600 dark:text-zinc-400 text-sm md:text-base'>
+            Tudo o que você precisa saber antes de começar.
+          </p>
         </div>
         <div className='space-y-3'>
-          {items.map((it, i) => (
-            <Card
-              key={i}
-              className='overflow-hidden bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'
-            >
-              <button
-                onClick={() => setOpen(open === i ? -1 : i)}
-                className='w-full p-5 flex items-center justify-between text-left'
+          {items.map((it, i) => {
+            const isOpen = open === i;
+            const Icon = it.Icon;
+            return (
+              <div
+                key={i}
+                className='reveal'
+                style={{ transitionDelay: `${i * 70}ms` }}
               >
-                <span className='font-semibold text-zinc-900 dark:text-zinc-100'>
-                  {it.q}
-                </span>
-                <ChevronDown
-                  size={18}
+                <Card
                   className={cn(
-                    'text-zinc-400 transition-transform',
-                    open === i && 'rotate-180',
+                    'relative overflow-hidden bg-white dark:bg-zinc-900 border transition-all duration-300 ease-out',
+                    'border-zinc-200 dark:border-zinc-800',
+                    !isOpen && 'hover:-translate-y-0.5 hover:shadow-md',
+                    isOpen && cn('shadow-lg ring-1 border-transparent', it.ring),
                   )}
-                />
-              </button>
-              {open === i && (
-                <div className='px-5 pb-5 text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed anim-fade-up'>
-                  {it.a}
-                </div>
-              )}
-            </Card>
-          ))}
+                >
+                  <div
+                    className={cn(
+                      'absolute inset-0 pointer-events-none bg-gradient-to-br opacity-0 transition-opacity duration-500',
+                      it.glow,
+                      isOpen && 'opacity-100',
+                    )}
+                    aria-hidden='true'
+                  />
+                  <button
+                    type='button'
+                    onClick={() => setOpen(isOpen ? -1 : i)}
+                    className='relative w-full p-5 flex items-center gap-4 text-left'
+                    aria-expanded={isOpen ? 'true' : 'false'}
+                  >
+                    <span
+                      className={cn(
+                        'flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md transition-all duration-300 ease-out',
+                        it.iconBg,
+                        isOpen ? 'scale-110 rotate-3' : '',
+                      )}
+                    >
+                      <Icon size={18} strokeWidth={2.5} />
+                    </span>
+                    <span
+                      className={cn(
+                        'flex-1 font-semibold transition-colors duration-300',
+                        isOpen ? it.text : 'text-zinc-900 dark:text-zinc-100',
+                      )}
+                    >
+                      {it.q}
+                    </span>
+                    <span
+                      className={cn(
+                        'flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ease-out',
+                        isOpen
+                          ? cn('text-white rotate-180', it.iconBg)
+                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400',
+                      )}
+                    >
+                      <ChevronDown size={14} strokeWidth={2.5} />
+                    </span>
+                  </button>
+                  <div
+                    className={cn(
+                      'relative grid transition-all duration-500 ease-out',
+                      isOpen
+                        ? 'grid-rows-[1fr] opacity-100'
+                        : 'grid-rows-[0fr] opacity-0',
+                    )}
+                  >
+                    <div className='overflow-hidden'>
+                      <div className='pl-[60px] pr-5 pb-5 text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed'>
+                        <div
+                          className={cn(
+                            'border-l-2 pl-4 py-1 transition-colors',
+                            isOpen ? it.border : 'border-transparent',
+                          )}
+                        >
+                          {it.a}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

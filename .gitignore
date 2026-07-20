@@ -44,3 +44,7 @@ _agents/
 _agent/
 dashboard/
 skills/
+
+# Projeto de referência de design (não versionar/subir) e bot de WhatsApp (fora de escopo)
+finance/
+whatsapp-bot/
