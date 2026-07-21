@@ -21,8 +21,10 @@ import {
 } from '@/components/ui/select';
 import { RecurringBill, RecurringBillFormValues, recurringBillFormSchema } from '@/types';
 import { CATEGORIES as STATIC_CATEGORIES } from '@/lib/categories';
-import { useCategories } from '@/hooks/useCategories';
-import { Plus, Pencil, Trash } from 'lucide-react';
+import { CategorySelect } from './CategorySelect';
+import { CurrencyInput } from './CurrencyInput';
+import { useCurrencyInput } from '@/hooks/useCurrencyInput';
+import { Plus, Pencil } from 'lucide-react';
 
 interface AddRecurringBillModalProps {
   onSave: (data: RecurringBillFormValues) => Promise<any>;
@@ -43,26 +45,12 @@ export function AddRecurringBillModal({
   trigger,
 }: AddRecurringBillModalProps) {
   const {
-    categories: dynamicCategories,
-    addCategory,
-    deleteCategory,
-  } = useCategories();
-  const allCategories =
-    dynamicCategories.length > 0 ? dynamicCategories : STATIC_CATEGORIES;
-
-  const [amountDisplay, setAmountDisplay] = useState(
+    display: amountDisplay,
+    handleChange: handleAmountChange,
+    reset: resetAmount,
+  } = useCurrencyInput(
     initialData ? String(initialData.amount).replace('.', ',') : '',
   );
-
-  const [showManage, setShowManage] = useState(false);
-  const [confirmCategory, setConfirmCategory] = useState<null | {
-    value: string;
-    label: string;
-    color: string;
-  }>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
 
   const {
     register,
@@ -90,23 +78,10 @@ export function AddRecurringBillModal({
         },
   });
 
-  const handleAmountChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    onChange: (value: number) => void,
-  ) => {
-    const raw = e.target.value.replace(/[^0-9,]/g, '');
-    const parts = raw.split(',');
-    const sanitized =
-      parts.length > 2 ? parts[0] + ',' + parts.slice(1).join('') : raw;
-    setAmountDisplay(sanitized);
-    const numeric = parseFloat(sanitized.replace(',', '.'));
-    onChange(isNaN(numeric) ? 0 : numeric);
-  };
-
   const onSubmit = async (data: RecurringBillFormValues) => {
     await onSave(data);
     reset();
-    setAmountDisplay('');
+    resetAmount();
     onOpenChange(false);
   };
 
@@ -149,19 +124,10 @@ export function AddRecurringBillModal({
                   name='amount'
                   control={control}
                   render={({ field }) => (
-                    <div className='flex items-center border border-input rounded-md focus-within:ring-2 focus-within:ring-ring bg-background overflow-hidden'>
-                      <span className='px-3 text-sm text-muted-foreground select-none border-r border-input h-full flex items-center'>
-                        R$
-                      </span>
-                      <input
-                        type='text'
-                        inputMode='decimal'
-                        placeholder='0,00'
-                        value={amountDisplay}
-                        onChange={(e) => handleAmountChange(e, field.onChange)}
-                        className='flex-1 px-3 py-2 text-sm bg-transparent outline-none placeholder:text-muted-foreground'
-                      />
-                    </div>
+                    <CurrencyInput
+                      value={amountDisplay}
+                      onChange={(e) => handleAmountChange(e, field.onChange)}
+                    />
                   )}
                 />
                 {errors.amount && (
@@ -180,158 +146,14 @@ export function AddRecurringBillModal({
                   name='category'
                   control={control}
                   render={({ field }) => (
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <SelectTrigger>
-                        <SelectValue>
-                          {field.value ? (
-                            <span className='inline-flex items-center gap-2'>
-                              <span
-                                className='h-2 w-2 rounded-full'
-                                style={{
-                                  backgroundColor: (
-                                    dynamicCategories.find(
-                                      (c) => c.value === field.value,
-                                    ) ||
-                                    STATIC_CATEGORIES.find(
-                                      (c) => c.value === field.value,
-                                    )
-                                  )?.color,
-                                }}
-                              />
-                              <span>
-                                {(
-                                  dynamicCategories.find(
-                                    (c) => c.value === field.value,
-                                  ) ||
-                                  STATIC_CATEGORIES.find(
-                                    (c) => c.value === field.value,
-                                  )
-                                )?.label ?? field.value}
-                              </span>
-                            </span>
-                          ) : (
-                            <span className='text-muted-foreground'>
-                              Selecione a categoria
-                            </span>
-                          )}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allCategories.map((c) => (
-                          <SelectItem key={c.value} value={c.value}>
-                            <span className='inline-flex items-center gap-2'>
-                              <span
-                                className='h-2 w-2 rounded-full'
-                                style={{ backgroundColor: c.color }}
-                              />
-                              {c.label}
-                            </span>
-                          </SelectItem>
-                        ))}
-                        <SelectItem key='criar_categoria' value='criar_categoria'>
-                          + Criar categoria
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <CategorySelect
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
                   )}
                 />
-
-                {/* Manage custom categories */}
-                {dynamicCategories.some(
-                  (c) => !STATIC_CATEGORIES.find((s) => s.value === c.value),
-                ) && (
-                  <div className='mt-2'>
-                    <button
-                      type='button'
-                      className='text-xs text-muted-foreground underline'
-                      onClick={() => setShowManage((s) => !s)}
-                    >
-                      {showManage ? 'Fechar gerenciamento' : 'Gerenciar categorias'}
-                    </button>
-
-                    {showManage && (
-                      <div className='mt-2 space-y-2'>
-                        {dynamicCategories
-                          .filter(
-                            (c) => !STATIC_CATEGORIES.find((s) => s.value === c.value),
-                          )
-                          .map((c) => (
-                            <div
-                              key={c.value}
-                              className='flex items-center gap-2 bg-card p-2 rounded-md border border-border/40'
-                            >
-                              <span
-                                className='inline-block h-2 w-2 rounded-full'
-                                style={{ backgroundColor: c.color }}
-                              />
-                              <span className='flex-1 text-xs'>{c.label}</span>
-                              <button
-                                type='button'
-                                className='p-1 rounded hover:bg-muted/20'
-                                onClick={() => {
-                                  setConfirmCategory({
-                                    value: c.value,
-                                    label: c.label,
-                                    color: c.color,
-                                  });
-                                  setConfirmOpen(true);
-                                }}
-                                aria-label={`Remover ${c.label}`}
-                              >
-                                <Trash className='h-3.5 w-3.5 text-red-400' />
-                              </button>
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
-
-            <Controller
-              name='category'
-              control={control}
-              render={({ field }) =>
-                field.value === 'criar_categoria' ? (
-                  <div className='flex flex-col sm:grid sm:grid-cols-4 sm:items-center gap-1.5 sm:gap-3'>
-                    <Label className='text-left sm:text-right text-sm font-medium'>Nova Categoria</Label>
-                    <div className='sm:col-span-3 flex gap-2'>
-                      <Input
-                        placeholder='Nome...'
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        className='flex-1'
-                      />
-                      <Button
-                        type='button'
-                        size='sm'
-                        onClick={async () => {
-                          if (!newCategoryName.trim()) return;
-                          try {
-                            setCreating(true);
-                            const created = await addCategory({
-                              label: newCategoryName.trim(),
-                            });
-                            field.onChange(created.value);
-                            setNewCategoryName('');
-                          } catch (e) {} finally {
-                            setCreating(false);
-                          }
-                        }}
-                      >
-                        {creating ? '...' : 'Criar'}
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <></>
-                )
-              }
-            />
 
             {/* Type */}
             <div className='flex flex-col sm:grid sm:grid-cols-4 sm:items-center gap-1.5 sm:gap-3'>
@@ -421,46 +243,6 @@ export function AddRecurringBillModal({
               </Button>
             </DialogFooter>
           </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Category Delete Confirmation */}
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className='sm:max-w-[425px]'>
-          <DialogHeader>
-            <DialogTitle>Excluir Categoria</DialogTitle>
-            <DialogDescription>
-              Tem certeza que deseja excluir a categoria '
-              {confirmCategory?.label}'? Isso não removerá as transações
-              existentes associadas a ela.
-            </DialogDescription>
-          </DialogHeader>
-          <div className='flex justify-end gap-3 mt-4'>
-            <Button
-              type='button'
-              variant='outline'
-              onClick={() => setConfirmOpen(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type='button'
-              variant='destructive'
-              onClick={async () => {
-                if (confirmCategory) {
-                  try {
-                    await deleteCategory(confirmCategory.value);
-                    setConfirmOpen(false);
-                    setConfirmCategory(null);
-                  } catch (e) {
-                    console.error('Failed to delete category', e);
-                  }
-                }
-              }}
-            >
-              Excluir
-            </Button>
-          </div>
         </DialogContent>
       </Dialog>
     </>
