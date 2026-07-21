@@ -3,12 +3,15 @@ import { Plus, MoreHorizontal, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NAV_ITEMS, useNavigation, type NavItem } from './navigation';
 
-const PRIMARY_IDS = ['dashboard', 'transacoes', 'cartoes'] as const;
+const PRIMARY_IDS = ['dashboard', 'transacoes', 'assistente'] as const;
 
 export function MobileBottomNav() {
   const { current, navigate } = useNavigation();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [pressed, setPressed] = useState(false);
+
+  // Na rota do Assistente o composer do chat ocupa o rodapé — a nav some.
+  const hidden = current === 'assistente';
 
   const { primary, overflow } = useMemo(() => {
     const primaryItems: NavItem[] = [];
@@ -83,6 +86,8 @@ export function MobileBottomNav() {
     // Aguarda a TransactionsPage (e o modal dentro dela) montar antes de abrir.
     window.setTimeout(dispatchOpen, 220);
   };
+
+  if (hidden) return null;
 
   return (
     <>

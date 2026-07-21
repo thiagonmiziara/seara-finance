@@ -16,11 +16,13 @@ import {
   Tags,
   Target,
   Settings,
+  MessageCircle,
   type LucideIcon,
 } from 'lucide-react';
 
 export type RouteId =
   | 'dashboard'
+  | 'assistente'
   | 'transacoes'
   | 'dividas'
   | 'cartoes'
@@ -39,6 +41,7 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', shortLabel: 'Início', icon: LayoutDashboard, path: '/' },
+  { id: 'assistente', label: 'Assistente', shortLabel: 'Chat', icon: MessageCircle, path: '/assistente' },
   { id: 'transacoes', label: 'Transações', shortLabel: 'Trans.', icon: ListChecks, path: '/transacoes' },
   { id: 'dividas', label: 'Dívidas', shortLabel: 'Dívidas', icon: Wallet, path: '/dividas' },
   { id: 'cartoes', label: 'Cartões', shortLabel: 'Cartões', icon: CreditCard, path: '/cartoes' },
