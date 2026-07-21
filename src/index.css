@@ -291,6 +291,33 @@ body {
   }
   .anim-ring-pulse { animation: ringPulse 2s ease-out infinite; }
 
+  /* Chat do Assistente (balões estilo WhatsApp) */
+  @keyframes msgInRight {
+    0%   { opacity: 0; transform: translate3d(28px, 4px, 0) scale(.82); }
+    60%  { opacity: 1; transform: translate3d(0, -1px, 0) scale(1.02); }
+    100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  }
+  .anim-msg-in-right {
+    animation: msgInRight .42s cubic-bezier(.2,.85,.25,1) both;
+    transform-origin: top right;
+  }
+
+  @keyframes msgInLeft {
+    0%   { opacity: 0; transform: translate3d(-28px, 4px, 0) scale(.82); }
+    60%  { opacity: 1; transform: translate3d(0, -1px, 0) scale(1.02); }
+    100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  }
+  .anim-msg-in-left {
+    animation: msgInLeft .46s cubic-bezier(.2,.85,.25,1) both;
+    transform-origin: top left;
+  }
+
+  @keyframes typingDot {
+    0%, 60%, 100% { transform: translateY(0); opacity: .35; }
+    30%           { transform: translateY(-4px); opacity: 1; }
+  }
+  .anim-typing-dot { animation: typingDot 1.15s ease-in-out infinite; }
+
   @media (prefers-reduced-motion: reduce) {
     .anim-fade-up,
     .anim-float,
@@ -299,6 +326,9 @@ body {
     .anim-score-fill,
     .anim-bar-grow,
     .anim-ring-pulse,
+    .anim-msg-in-right,
+    .anim-msg-in-left,
+    .anim-typing-dot,
     .gradient-text {
       animation: none;
     }

@@ -3,6 +3,7 @@ import { useMigration } from '@/hooks/useMigration';
 import { useRecurringBillsSync } from '@/hooks/useRecurringBillsSync';
 import { DueDebtsReminderModal } from '@/components/DueDebtsReminderModal';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 import { NavigationProvider, useNavigation } from './navigation';
 import { PeriodProvider } from './period-context';
 import { Sidebar } from './Sidebar';
@@ -10,6 +11,7 @@ import { TopBar } from './TopBar';
 import { MobileBottomNav } from './MobileBottomNav';
 
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'));
+const AssistantPage = lazy(() => import('@/pages/AssistantPage'));
 const TransactionsPage = lazy(() => import('@/pages/TransactionsPage'));
 const DebtsPage = lazy(() => import('@/pages/DebtsPage'));
 const CardsPage = lazy(() => import('@/pages/CardsPage'));
@@ -33,22 +35,46 @@ function ShellContent() {
   useMigration();
   useRecurringBillsSync();
 
+  // O Assistente controla a própria altura/scroll (chat full-height);
+  // as demais páginas usam o container padrão com padding e largura máxima.
+  const isChat = current === 'assistente';
+
   return (
     <div className='min-h-screen bg-background'>
       <DueDebtsReminderModal />
       <div className='flex'>
         <Sidebar />
 
-        <div className='flex-1 min-w-0 flex flex-col min-h-screen'>
+        <div
+          className={cn(
+            'flex-1 min-w-0 flex flex-col',
+            // No chat, prende a coluna à altura dinâmica do viewport (dvh) para
+            // o rodapé com o input ficar sempre visível — inclusive quando o
+            // topo tem 2 faixas no mobile (header + seletor de conta) e quando
+            // o teclado abre. Demais rotas rolam normalmente (min-h-screen).
+            isChat ? 'h-[100dvh] overflow-hidden' : 'min-h-screen',
+          )}
+        >
           <TopBar />
 
-          <main className='flex-1 px-3 sm:px-6 py-6 pb-24 lg:pb-10 max-w-7xl w-full mx-auto'>
+          <main
+            className={cn(
+              isChat
+                ? 'flex-1 min-h-0 flex flex-col'
+                : 'flex-1 px-3 sm:px-6 py-6 pb-24 lg:pb-10 max-w-7xl w-full mx-auto',
+            )}
+          >
             <div
               key={current}
-              className='animate-in fade-in slide-in-from-bottom-2 duration-300'
+              className={cn(
+                isChat
+                  ? 'flex-1 flex flex-col min-h-0'
+                  : 'animate-in fade-in slide-in-from-bottom-2 duration-300',
+              )}
             >
               <Suspense fallback={<PageLoader />}>
                 {current === 'dashboard' && <DashboardPage />}
+                {current === 'assistente' && <AssistantPage />}
                 {current === 'transacoes' && <TransactionsPage />}
                 {current === 'dividas' && <DebtsPage />}
                 {current === 'cartoes' && <CardsPage />}
@@ -62,7 +88,7 @@ function ShellContent() {
         </div>
       </div>
 
-      <MobileBottomNav />
+      {!isChat && <MobileBottomNav />}
     </div>
   );
 }
