@@ -19,6 +19,15 @@ export default defineConfig({
                 skipWaiting: true,
                 clientsClaim: true,
                 cleanupOutdatedCaches: true,
+                // Injeta nossos handlers de Web Push (push / notificationclick)
+                // no service worker gerado pelo Workbox. Arquivo em /public.
+                importScripts: ['push-sw.js'],
+            },
+            // Habilita o service worker também em `npm run dev`, para conseguir
+            // testar push localmente (por padrão o SW só existe no build).
+            devOptions: {
+                enabled: true,
+                type: 'classic',
             },
             includeAssets: ['favicon.ico', 'pwa-192x192.png', 'pwa-512x512.png', 'apple-touch-icon.png'],
             manifest: {
